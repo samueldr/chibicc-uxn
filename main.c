@@ -36,10 +36,10 @@ int main(int argc, char **argv) {
     for (VarList *vl = fn->locals; vl; vl = vl->next) {
       Var *var = vl->var;
       offset = align_to(offset, var->ty->align);
-      offset += var->ty->size;
       var->offset = offset;
+      offset += var->ty->size;
     }
-    fn->stack_size = align_to(offset, 8);
+    fn->stack_size = align_to(offset, 2);
   }
 
   // Traverse the AST to emit assembly.

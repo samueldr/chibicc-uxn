@@ -1,11 +1,11 @@
 #include "chibi.h"
 
-Type *void_type  = &(Type){ TY_VOID, 1, 1 };
-Type *bool_type  = &(Type){ TY_BOOL, 1, 1 };
-Type *char_type  = &(Type){ TY_CHAR, 1, 1 };
+Type *void_type  = &(Type){ TY_VOID, 1, 2 };
+Type *bool_type  = &(Type){ TY_BOOL, 1, 2 };
+Type *char_type  = &(Type){ TY_CHAR, 1, 2 };
 Type *short_type = &(Type){ TY_SHORT, 2, 2 };
-Type *int_type   = &(Type){ TY_INT, 4, 4 };
-Type *long_type  = &(Type){ TY_LONG, 8, 8 };
+Type *int_type   = &(Type){ TY_INT, 2, 2 };
+Type *long_type  = &(Type){ TY_LONG, 2, 2 };
 
 bool is_integer(Type *ty) {
   TypeKind k = ty->kind;
@@ -26,7 +26,7 @@ static Type *new_type(TypeKind kind, int size, int align) {
 }
 
 Type *pointer_to(Type *base) {
-  Type *ty = new_type(TY_PTR, 8, 8);
+  Type *ty = new_type(TY_PTR, 2, 2);
   ty->base = base;
   return ty;
 }
@@ -45,7 +45,7 @@ Type *func_type(Type *return_ty) {
 }
 
 Type *enum_type(void) {
-  return new_type(TY_ENUM, 4, 4);
+  return new_type(TY_ENUM, 2, 1);
 }
 
 Type *struct_type(void) {
