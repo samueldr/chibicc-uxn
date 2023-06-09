@@ -396,7 +396,7 @@ static void gen(Node *node) {
     // printf("  pop rax\n");
     // printf("  cmp rax, 0\n");
     // printf("  je  .L.false.%d\n", seq);
-    printf("  #0000 EQU2 ;.L.false.%d JCN2\n", seq);
+    printf("  #0000 EQU2 ?.L.false.%d\n", seq);
     gen(node->rhs);
     // printf("  pop rax\n");
     // printf("  cmp rax, 0\n");
@@ -406,8 +406,8 @@ static void gen(Node *node) {
     // printf(".L.false.%d:\n", seq);
     // printf("  push 0\n");
     // printf(".L.end.%d:\n", seq);
-    printf("  #0000 EQU2 ;.L.false.%d JCN2\n", seq);
-    printf("  #0001 ;.L.end.%d JMP2\n", seq);
+    printf("  #0000 EQU2 ?.L.false.%d\n", seq);
+    printf("  #0001 !.L.end.%d\n", seq);
     printf("@.L.false.%d\n", seq);
     printf("  #0000\n");
     printf("@.L.end.%d\n", seq);
@@ -419,7 +419,7 @@ static void gen(Node *node) {
     // printf("  pop rax\n");
     // printf("  cmp rax, 0\n");
     // printf("  jne .L.true.%d\n", seq);
-    printf("  #0000 NEQ2 ;.L.true.%d JCN2\n", seq);
+    printf("  #0000 NEQ2 ?.L.true.%d\n", seq);
     gen(node->rhs);
     // printf("  pop rax\n");
     // printf("  cmp rax, 0\n");
@@ -429,8 +429,8 @@ static void gen(Node *node) {
     // printf(".L.true.%d:\n", seq);
     // printf("  push 1\n");
     // printf(".L.end.%d:\n", seq);
-    printf("  #0000 NEQ2 ;.L.true.%d JCN2\n", seq);
-    printf("  #0000 ;.L.end.%d JMP2\n", seq);
+    printf("  #0000 NEQ2 ?.L.true.%d\n", seq);
+    printf("  #0000 !.L.end.%d\n", seq);
     printf("@.L.true.%d\n", seq);
     printf("  #0001\n");
     printf("@.L.end.%d\n", seq);
@@ -443,24 +443,24 @@ static void gen(Node *node) {
       // printf("  pop rax\n");
       // printf("  cmp rax, 0\n");
       // printf("  je  .L.else.%d\n", seq);
-      printf("  #0000 EQU2 ;.L.else.%d JCN2\n", seq);
+      printf("  #0000 EQU2 ?.L.else.%d\n", seq);
       gen(node->then);
       // printf("  jmp .L.end.%d\n", seq);
       // printf(".L.else.%d:\n", seq);
-      printf("  ;.L.end.%d JMP2\n", seq);
+      printf("  !.L.end.%d\n", seq);
       printf("@.L.else.%d\n", seq);
       gen(node->els);
       // printf(".L.end.%d:\n", seq);
-      printf("@.L.else.%d\n", seq);
+      printf("@.L.end.%d\n", seq);
     } else {
       gen(node->cond);
       // printf("  pop rax\n");
       // printf("  cmp rax, 0\n");
       // printf("  je  .L.end.%d\n", seq);
-      printf("  #0000 EQU2 ;.L.end.%d JCN2\n", seq);
+      printf("  #0000 EQU2 ?.L.end.%d\n", seq);
       gen(node->then);
       // printf(".L.end.%d:\n", seq);
-      printf("@L.end.%d\n", seq);
+      printf("@.L.end.%d\n", seq);
     }
     return;
   }
@@ -477,12 +477,12 @@ static void gen(Node *node) {
     // printf("  pop rax\n");
     // printf("  cmp rax, 0\n");
     // printf("  je  .L.break.%d\n", seq);
-    printf("  #0000 EQU2 ;.L.break.%d JCN2\n", seq);
+    printf("  #0000 EQU2 ?.L.break.%d\n", seq);
 
     gen(node->then);
     // printf("  jmp .L.continue.%d\n", seq);
     // printf(".L.break.%d:\n", seq);
-    printf("  ;.L.continue.%d JMP2\n", seq);
+    printf("  !.L.continue.%d\n", seq);
     printf("@.L.break.%d\n", seq);
 
     brkseq = brk;
@@ -536,7 +536,7 @@ static void gen(Node *node) {
     // printf("  cmp rax, 0\n");
     // printf("  jne .L.begin.%d\n", seq);
     // printf(".L.break.%d:\n", seq);
-    printf("  #0000 EQU2 ;.L.begin.%d JCN2\n", seq);
+    printf("  #0000 EQU2 ?.L.begin.%d\n", seq);
     printf("@.L.break.%d\n", seq);
 
     brkseq = brk;
@@ -550,31 +550,34 @@ static void gen(Node *node) {
     node->case_label = seq;
 
     gen(node->cond);
-    printf("  pop rax\n");
+    // printf("  pop rax\n");
 
     for (Node *n = node->case_next; n; n = n->case_next) {
       n->case_label = labelseq++;
       n->case_end_label = seq;
-      printf("  cmp rax, %ld\n", n->val);
-      printf("  je .L.case.%d\n", n->case_label);
+      // printf("  cmp rax, %ld\n", n->val);
+      // printf("  je .L.case.%d\n", n->case_label);
+      printf("  DUP2 #%04x EQU2 ?.L.case.%d\n", n->val, n->case_label);
     }
 
     if (node->default_case) {
       int i = labelseq++;
       node->default_case->case_end_label = seq;
       node->default_case->case_label = i;
-      printf("  jmp .L.case.%d\n", i);
+      printf("  !.L.case.%d\n", i);
     }
 
-    printf("  jmp .L.break.%d\n", seq);
+    printf("  !.L.break.%d\n", seq);
     gen(node->then);
-    printf(".L.break.%d:\n", seq);
+    printf("@.L.break.%d\n", seq);
+    printf("  POP2\n");
 
     brkseq = brk;
     return;
   }
   case ND_CASE:
-    printf(".L.case.%d:\n", node->case_label);
+    printf("@.L.case.%d\n", node->case_label);
+    printf("  POP2\n");
     gen(node->lhs);
     return;
   case ND_BLOCK:
@@ -586,17 +589,17 @@ static void gen(Node *node) {
     if (brkseq == 0)
       error_tok(node->tok, "stray break");
     // printf("  jmp .L.break.%d\n", brkseq);
-    printf("  ;.L.break.%d JMP2\n", brkseq);
+    printf("  !.L.break.%d\n", brkseq);
     return;
   case ND_CONTINUE:
     if (contseq == 0)
       error_tok(node->tok, "stray continue");
     // printf("  jmp .L.continue.%d\n", contseq);
-    printf("  ;.L.continue.%d JMP2\n", contseq);
+    printf("  !.L.continue.%d\n", contseq);
     return;
   case ND_GOTO:
     // printf("  jmp .L.label.%s.%s\n", funcname, node->label_name);
-    printf("  ;.L.label.%s.%s JMP2\n", funcname, node->label_name);
+    printf("  !.L.label.%s.%s\n", funcname, node->label_name);
     return;
   case ND_LABEL:
     // printf(".L.label.%s.%s:\n", funcname, node->label_name);
@@ -604,17 +607,31 @@ static void gen(Node *node) {
     gen(node->lhs);
     return;
   case ND_FUNCALL: {
+    if (!strcmp(node->funcname, "brk")) {
+      printf("  BRK\n");
+      return;
+    }
     if (!strcmp(node->funcname, "deo")) {
       gen(node->args->next);
-      printf("  NIP");
+      printf("  NIP\n");
       gen(node->args);
-      printf("  NIP DEOk"); // Will be followed by POP2
+      printf("  NIP DEOk\n"); // Will be followed by POP2
       return;
     }
     if (!strcmp(node->funcname, "deo2")) {
       gen(node->args->next);
       gen(node->args);
-      printf("  NIP DEO2k POP"); // Will be followed by POP2
+      printf("  NIP DEO2k POP\n"); // Will be followed by POP2
+      return;
+    }
+    if (!strcmp(node->funcname, "dei")) {
+      gen(node->args);
+      printf("  NIP DEI #00 SWP\n");
+      return;
+    }
+    if (!strcmp(node->funcname, "dei2")) {
+      gen(node->args);
+      printf("  NIP DEI2\n");
       return;
     }
     if (!strcmp(node->funcname, "__builtin_va_start")) {
@@ -664,7 +681,7 @@ static void gen(Node *node) {
     // if (node->ty->kind == TY_BOOL)
     //   printf("  movzb rax, al\n");
     // printf("  push rax\n");
-    printf("  fn_%s\n", node->funcname);
+    printf("  %s\n", node->funcname);
     return;
   }
   case ND_RETURN:
@@ -672,7 +689,7 @@ static void gen(Node *node) {
       gen(node->lhs);
       // printf("  pop rax\n");
     }
-    printf("  ;.L.return.%s JMP2\n", funcname);
+    printf("  !.L.return.%s\n", funcname);
     return;
   case ND_CAST:
     gen(node->lhs);
@@ -744,7 +761,7 @@ static void emit_text(Program *prog) {
   for (Function *fn = prog->fns; fn; fn = fn->next) {
     // if (!fn->is_static)
     //   printf(".global %s\n", fn->name);
-    printf("@fn_%s\n", fn->name);
+    printf("@%s\n", fn->name);
     funcname = fn->name;
 
     // Prologue
@@ -792,12 +809,8 @@ static void emit_text(Program *prog) {
 
 void codegen(Program *prog) {
   printf("|0000 @rbp $2\n");
-  printf("|0100 #ff00 .rbp STZ2 fn_main BRK\n");
+  printf("|0100 #ff00 .rbp STZ2 main BRK\n");
   printf("@r` .rbp LDZ2 #0002 SUB2 DUP2 .rbp STZ2 STA2 JMP2r\n");
-  printf("@dei  .rbp LDZ2 LDA2 NIP DEI #00 SWP  .rbp LDZ2 #0004 ADD2 .rbp STZ2 "
-         "JMP2r\n");
-  printf("@dei2 .rbp LDZ2 LDA2 NIP DEI2         .rbp LDZ2 #0004 ADD2 .rbp STZ2 "
-         "JMP2r\n");
   emit_data(prog);
   emit_text(prog);
 }
