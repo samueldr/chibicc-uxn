@@ -92,6 +92,7 @@ typedef enum {
   ND_PTR_DIFF,   // ptr - ptr
   ND_MUL,        // *
   ND_DIV,        // /
+  ND_MOD,        // %
   ND_BITAND,     // &
   ND_BITOR,      // |
   ND_BITXOR,     // ^
@@ -113,6 +114,7 @@ typedef enum {
   ND_PTR_SUB_EQ, // -=
   ND_MUL_EQ,     // *=
   ND_DIV_EQ,     // /=
+  ND_MOD_EQ,     // %=
   ND_SHL_EQ,     // <<=
   ND_SHR_EQ,     // >>=
   ND_BITAND_EQ,  // &=

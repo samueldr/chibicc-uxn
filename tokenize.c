@@ -179,7 +179,7 @@ static char get_escape_char(char c) {
 
 static Token *read_string_literal(Token *cur, char *start) {
   char *p = start + 1;
-  char buf[1024];
+  char buf[10240];
   int len = 0;
 
   for (;;) {

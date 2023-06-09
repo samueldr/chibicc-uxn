@@ -21,7 +21,10 @@ static void gen_addr(Node *node) {
 
     Var *var = node->var;
     if (var->is_local) {
-      printf("  #%04x .rbp LDZ2 ADD2\n", var->offset);
+      if (var->offset == 0)
+        printf("  .rbp LDZ2\n");
+      else
+        printf("  #%04x .rbp LDZ2 ADD2\n", var->offset);
     } else {
       printf("  ;%s\n", var->name);
     }
@@ -35,7 +38,8 @@ static void gen_addr(Node *node) {
     // printf("  pop rax\n");
     // printf("  add rax, %d\n", node->member->offset);
     // printf("  push rax\n");
-    printf("  #%04x ADD2\n", node->member->offset);
+    if (node->member->offset != 0)
+      printf("  #%04x ADD2\n", node->member->offset);
     return;
   }
 
@@ -126,14 +130,18 @@ static void inc(Type *ty) {
   // printf("  pop rax\n");
   // printf("  add rax, %d\n", ty->base ? ty->base->size : 1);
   // printf("  push rax\n");
-  printf("  #%04x ADD2", ty->base ? ty->base->size : 1);
+  int n = ty->base ? ty->base->size : 1;
+  if (n == 1)
+    printf("  INC2\n");
+  else
+    printf("  #%04x ADD2\n", n);
 }
 
 static void dec(Type *ty) {
   // printf("  pop rax\n");
   // printf("  sub rax, %d\n", ty->base ? ty->base->size : 1);
   // printf("  push rax\n");
-  printf("  #%04x SUB2", ty->base ? ty->base->size : 1);
+  printf("  #%04x SUB2\n", ty->base ? ty->base->size : 1);
 }
 
 static void gen_binary(Node *node) {
@@ -182,6 +190,12 @@ static void gen_binary(Node *node) {
     // printf("  idiv rdi\n");
     printf("  DIV2\n");
     break;
+  case ND_MOD:
+  case ND_MOD_EQ:
+    // printf("  cqo\n");
+    // printf("  idiv rdi\n");
+    printf("  DIV2k MUL2 SUB2\n");
+    break;
   case ND_BITAND:
   case ND_BITAND_EQ:
     // printf("  and rax, rdi\n");
@@ -201,13 +215,13 @@ static void gen_binary(Node *node) {
   case ND_SHL_EQ:
     // printf("  mov cl, dil\n");
     // printf("  shl rax, cl\n");
-    printf("  NIP #40 SHF SHF2\n");
+    printf("  NIP #40 SFT SFT2\n");
     break;
   case ND_SHR:
   case ND_SHR_EQ:
     // printf("  mov cl, dil\n");
     // printf("  sar rax, cl\n");
-    printf("  NIP #0f AND SHF2\n");
+    printf("  NIP #0f AND SFT2\n");
     break;
   case ND_EQ:
     // printf("  cmp rax, rdi\n");
@@ -238,7 +252,7 @@ static void gen_binary(Node *node) {
   // printf("  push rax\n");
 }
 
-void args_backwards(Node* node) {
+void args_backwards(Node *node) {
   if (node->next) {
     args_backwards(node->next);
   }
@@ -257,7 +271,7 @@ static void gen(Node *node) {
     //   printf("  movabs rax, %ld\n", node->val);
     //   printf("  push rax\n");
     // }
-    printf("  #%04x\n", (unsigned short) node->val);
+    printf("  #%04x\n", (unsigned short)node->val);
     return;
   case ND_EXPR_STMT:
     gen(node->lhs);
@@ -286,9 +300,9 @@ static void gen(Node *node) {
     gen(node->cond);
     // printf("  pop rax\n");
     // printf("  cmp rax, 0\n");
-    printf("  #0000 EQU2 ;.L.else.%d JCN2\n", seq);
+    printf("  #0000 EQU2 ?.L.else.%d\n", seq);
     gen(node->then);
-    printf("  ;.L.end.%d JMP2\n", seq);
+    printf("  !.L.end.%d\n", seq);
     printf("@.L.else.%d\n", seq);
     gen(node->els);
     printf("@.L.end.%d\n", seq);
@@ -490,7 +504,7 @@ static void gen(Node *node) {
       // printf("  pop rax\n");
       // printf("  cmp rax, 0\n");
       // printf("  je  .L.break.%d\n", seq);
-      printf("  #0000 EQU2 ;.L.break.%d JCN2\n", seq);
+      printf("  #0000 EQU2 ?.L.break.%d\n", seq);
     }
     gen(node->then);
     // printf(".L.continue.%d:\n", seq);
@@ -499,7 +513,7 @@ static void gen(Node *node) {
       gen(node->inc);
     // printf("  jmp .L.begin.%d\n", seq);
     // printf(".L.break.%d:\n", seq);
-    printf("  ;.L.begin.%d JMP2\n", seq);
+    printf("  !.L.begin.%d\n", seq);
     printf("@.L.break.%d\n", seq);
 
     brkseq = brk;
@@ -590,6 +604,19 @@ static void gen(Node *node) {
     gen(node->lhs);
     return;
   case ND_FUNCALL: {
+    if (!strcmp(node->funcname, "deo")) {
+      gen(node->args->next);
+      printf("  NIP");
+      gen(node->args);
+      printf("  NIP DEOk"); // Will be followed by POP2
+      return;
+    }
+    if (!strcmp(node->funcname, "deo2")) {
+      gen(node->args->next);
+      gen(node->args);
+      printf("  NIP DEO2k POP"); // Will be followed by POP2
+      return;
+    }
     if (!strcmp(node->funcname, "__builtin_va_start")) {
       // printf("  pop rax\n");
       // printf("  mov edi, dword ptr [rbp-8]\n");
@@ -603,8 +630,9 @@ static void gen(Node *node) {
 
     args_backwards(node->args);
     for (Node *arg = node->args; arg; arg = arg->next) {
-      // TODO: this "calling convention" is busted in such a way that char parameters don't actually work :|
-      printf("  .rbp LDZ2 #0002 SUB2 DUP2 .rbp STZ2 STA2\n");
+      // TODO: this "calling convention" is busted in such a way that char
+      // parameters don't actually work :|
+      printf("  r`\n");
     }
 
     // int nargs = 0;
@@ -636,7 +664,7 @@ static void gen(Node *node) {
     // if (node->ty->kind == TY_BOOL)
     //   printf("  movzb rax, al\n");
     // printf("  push rax\n");
-    printf("  ;%s JSR2\n", node->funcname);
+    printf("  fn_%s\n", node->funcname);
     return;
   }
   case ND_RETURN:
@@ -687,10 +715,11 @@ static void emit_data(Program *prog) {
       if (init->label)
         error("unsupported label+addend");
       else if (init->sz == 1)
-        printf("  %02x\n", (unsigned char) init->val);
+        printf("  %02x\n", (unsigned char)init->val);
       else if (init->sz == 2)
-        printf("  %04x\n", (unsigned short) init->val);
-      else error("unsupported initializer size");
+        printf("  %04x\n", (unsigned short)init->val);
+      else
+        error("unsupported initializer size");
     }
   }
 }
@@ -715,7 +744,7 @@ static void emit_text(Program *prog) {
   for (Function *fn = prog->fns; fn; fn = fn->next) {
     // if (!fn->is_static)
     //   printf(".global %s\n", fn->name);
-    printf("@%s\n", fn->name);
+    printf("@fn_%s\n", fn->name);
     funcname = fn->name;
 
     // Prologue
@@ -754,7 +783,8 @@ static void emit_text(Program *prog) {
     // printf("  mov rsp, rbp\n");
     // printf("  pop rbp\n");
     // printf("  ret\n");
-    printf("  .rbp LDZ2 #%04x ADD2 .rbp STZ2\n", fn->stack_size);
+    if (fn->stack_size != 0)
+      printf("  .rbp LDZ2 #%04x ADD2 .rbp STZ2\n", fn->stack_size);
 
     printf("  JMP2r\n");
   }
@@ -762,11 +792,12 @@ static void emit_text(Program *prog) {
 
 void codegen(Program *prog) {
   printf("|0000 @rbp $2\n");
-  printf("|0100 #0050 .rbp STZ2 ;main JSR2 BRK\n");
-  printf("@deo   .rbp LDZ2 LDA2 NIP .rbp LDZ2 INC2 INC2 LDA2 NIP DEO  #0000  .rbp LDZ2 #0004 ADD2 .rbp STZ2 JMP2r\n");
-  printf("@deo2  .rbp LDZ2 LDA2     .rbp LDZ2 INC2 INC2 LDA2 NIP DEO2 #0000  .rbp LDZ2 #0004 ADD2 .rbp STZ2 JMP2r\n");
-  printf("@dei  .rbp LDZ2 LDA2 NIP DEI #00 SWP  .rbp LDZ2 #0004 ADD2 .rbp STZ2 JMP2r\n");
-  printf("@dei2 .rbp LDZ2 LDA2 NIP DEI2         .rbp LDZ2 #0004 ADD2 .rbp STZ2 JMP2r\n");
+  printf("|0100 #ff00 .rbp STZ2 fn_main BRK\n");
+  printf("@r` .rbp LDZ2 #0002 SUB2 DUP2 .rbp STZ2 STA2 JMP2r\n");
+  printf("@dei  .rbp LDZ2 LDA2 NIP DEI #00 SWP  .rbp LDZ2 #0004 ADD2 .rbp STZ2 "
+         "JMP2r\n");
+  printf("@dei2 .rbp LDZ2 LDA2 NIP DEI2         .rbp LDZ2 #0004 ADD2 .rbp STZ2 "
+         "JMP2r\n");
   emit_data(prog);
   emit_text(prog);
 }

@@ -1353,6 +1353,8 @@ static long eval2(Node *node, Var **var) {
     return eval(node->lhs) * eval(node->rhs);
   case ND_DIV:
     return eval(node->lhs) / eval(node->rhs);
+  case ND_MOD:
+    return eval(node->lhs) % eval(node->rhs);
   case ND_BITAND:
     return eval(node->lhs) & eval(node->rhs);
   case ND_BITOR:
@@ -1419,6 +1421,9 @@ static Node *assign(void) {
 
   if (tok = consume("/="))
     return new_binary(ND_DIV_EQ, node, assign(), tok);
+
+  if (tok = consume("%="))
+    return new_binary(ND_MOD_EQ, node, assign(), tok);
 
   if (tok = consume("<<="))
     return new_binary(ND_SHL_EQ, node, assign(), tok);
@@ -1614,6 +1619,8 @@ static Node *mul(void) {
       node = new_binary(ND_MUL, node, cast(), tok);
     else if (tok = consume("/"))
       node = new_binary(ND_DIV, node, cast(), tok);
+    else if (tok = consume("%"))
+      node = new_binary(ND_MOD, node, cast(), tok);
     else
       return node;
   }
