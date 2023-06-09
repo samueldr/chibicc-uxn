@@ -557,7 +557,7 @@ static void gen(Node *node) {
       n->case_end_label = seq;
       // printf("  cmp rax, %ld\n", n->val);
       // printf("  je .L.case.%d\n", n->case_label);
-      printf("  DUP2 #%04x EQU2 ?.L.case.%d\n", n->val, n->case_label);
+      printf("  DUP2 #%04x EQU2 ?.L.case.%d\n", (unsigned short) n->val, n->case_label);
     }
 
     if (node->default_case) {
@@ -646,10 +646,10 @@ static void gen(Node *node) {
     }
 
     args_backwards(node->args);
+    int offset = 0;
     for (Node *arg = node->args; arg; arg = arg->next) {
-      // TODO: this "calling convention" is busted in such a way that char
-      // parameters don't actually work :|
-      printf("  r`\n");
+      offset += 2;
+      printf("  .rbp LDZ2 #%04x SUB2 STA2\n", offset);
     }
 
     // int nargs = 0;
@@ -768,6 +768,8 @@ static void emit_text(Program *prog) {
     // printf("  push rbp\n");
     // printf("  mov rbp, rsp\n");
     // printf("  sub rsp, %d\n", fn->stack_size);
+    if (fn->stack_size != 0)
+      printf("  .rbp LDZ2 #%04x SUB2 .rbp STZ2\n", fn->stack_size);
 
     // Save arg registers if function is variadic
     if (fn->has_varargs) {
