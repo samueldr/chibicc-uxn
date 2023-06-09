@@ -557,7 +557,8 @@ static void gen(Node *node) {
       n->case_end_label = seq;
       // printf("  cmp rax, %ld\n", n->val);
       // printf("  je .L.case.%d\n", n->case_label);
-      printf("  DUP2 #%04x EQU2 ?.L.case.%d\n", (unsigned short) n->val, n->case_label);
+      printf("  DUP2 #%04x EQU2 ?.L.case.%d\n", (unsigned short)n->val,
+             n->case_label);
     }
 
     if (node->default_case) {
@@ -812,7 +813,6 @@ static void emit_text(Program *prog) {
 void codegen(Program *prog) {
   printf("|0000 @rbp $2\n");
   printf("|0100 #ff00 .rbp STZ2 main BRK\n");
-  printf("@r` .rbp LDZ2 #0002 SUB2 DUP2 .rbp STZ2 STA2 JMP2r\n");
   emit_data(prog);
   emit_text(prog);
 }
