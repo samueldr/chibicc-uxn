@@ -61,6 +61,10 @@ void error_tok(Token *tok, char *fmt, ...) {
   exit(1);
 }
 
+static void error_tok_long(Token *tok) {
+  error_tok(tok, "long (32-bit) and long long (64-bit) aren't supported, only char (8-bit) and short/int (16-bit)");
+}
+
 void warn_tok(Token *tok, char *fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
@@ -251,13 +255,17 @@ static Token *read_int_literal(Token *cur, char *start) {
 
   // Read L or LL prefix or infer a type.
   if (startswith(p, "LL") || startswith(p, "ll")) {
-    p += 2;
-    ty = long_type;
+    error_tok_long(cur);
+    //p += 2;
+    //ty = long_type;
   } else if (*p == 'L' || *p == 'l') {
-    p++;
-    ty = long_type;
-  } else if (val != (int)val) {
-    ty = long_type;
+    error_tok_long(cur);
+    //p++;
+    //ty = long_type;
+  //} else if (val != (int)val) {
+  //  ty = long_type;
+  } else if (val != (short)val) {
+    error_tok(cur, "integer literal is too large for type int (16-bit)");
   }
 
   if (is_alnum(*p))
@@ -318,6 +326,8 @@ Token *tokenize(void) {
     if (kw) {
       int len = strlen(kw);
       cur = new_token(TK_RESERVED, cur, p, len);
+      if (len == 4 && p[0] == 'l' && p[1] == 'o' && p[2] == 'n' && p[3] == 'g')
+        error_tok_long(cur);
       p += len;
       continue;
     }

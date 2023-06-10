@@ -19,7 +19,7 @@ typedef int MyInt;
 char g3 = 3;
 short g4 = 4;
 int g5 = 5;
-long g6 = 6;
+//long g6 = 6;
 int *g7 = &g5;
 char *g8 = "abc";
 int g9[3] = {0, 1, 2};
@@ -66,7 +66,7 @@ int;
 struct {char a; int b;};
 typedef struct {char a; int b;} Ty1;
 
-int assert(long expected, long actual, char *code) {
+int assert(int /*long*/ expected, int /*long*/ actual, char *code) {
   if (expected == actual) {
     printf("%s => %ld\n", code, actual);
   } else {
@@ -104,9 +104,9 @@ int sub_short(short a, short b, short c) {
   return a - b - c;
 }
 
-int sub_long(long a, long b, long c) {
-  return a - b - c;
-}
+//int sub_long(long a, long b, long c) {
+//  return a - b - c;
+//}
 
 int *g1_ptr() {
   return &g1;
@@ -343,11 +343,11 @@ int main() {
   assert(2, ({ short x; sizeof(x); }), "short x; sizeof(x);");
   assert(4, ({ struct {char a; short b;} x; sizeof(x); }), "struct {char a; short b;} x; sizeof(x);");
 
-  assert(8, ({ long x; sizeof(x); }), "long x; sizeof(x);");
-  assert(16, ({ struct {char a; long b;} x; sizeof(x); }), "struct {char a; long b} x; sizeof(x);");
+  //assert(8, ({ long x; sizeof(x); }), "long x; sizeof(x);");
+  //assert(16, ({ struct {char a; long b;} x; sizeof(x); }), "struct {char a; long b} x; sizeof(x);");
 
   assert(1, sub_short(7, 3, 3), "sub_short(7, 3, 3)");
-  assert(1, sub_long(7, 3, 3), "sub_long(7, 3, 3)");
+  //assert(1, sub_long(7, 3, 3), "sub_long(7, 3, 3)");
 
   assert(24, ({ int *x[3]; sizeof(x); }), "int *x[3]; sizeof(x);");
   assert(8, ({ int (*x)[3]; sizeof(x); }), "int (*x)[3]; sizeof(x);");
@@ -368,10 +368,10 @@ int main() {
   assert(4, ({ int x; sizeof(x); }), "int x; sizeof(x);");
   assert(4, ({ typedef t; t x; sizeof(x); }), "typedef t; t x; sizeof(x);");
   assert(4, ({ typedef typedef t; t x; sizeof(x); }), "typedef typedef t; t x; sizeof(x);");
-  assert(8, ({ long int x; sizeof(x); }), "long int x; sizeof(x);");
-  assert(8, ({ int long x; sizeof(x); }), "int long x; sizeof(x);");
-  assert(8, ({ long long x; sizeof(x); }), "long long x; sizeof(x);");
-  assert(8, ({ long int long x; sizeof(x); }), "long int long x; sizeof(x);");
+  //assert(8, ({ long int x; sizeof(x); }), "long int x; sizeof(x);");
+  //assert(8, ({ int long x; sizeof(x); }), "int long x; sizeof(x);");
+  //assert(8, ({ long long x; sizeof(x); }), "long long x; sizeof(x);");
+  //assert(8, ({ long int long x; sizeof(x); }), "long int long x; sizeof(x);");
 
   assert(3, ({ MyInt x=3; x; }), "MyInt x=3; x;");
 
@@ -380,9 +380,9 @@ int main() {
   assert(2, sizeof(short int), "sizeof(short int)");
   assert(2, sizeof(int short), "sizeof(int short)");
   assert(4, sizeof(int), "sizeof(int)");
-  assert(8, sizeof(long), "sizeof(long)");
-  assert(8, sizeof(long int), "sizeof(long int)");
-  assert(8, sizeof(long int), "sizeof(long int)");
+  //assert(8, sizeof(long), "sizeof(long)");
+  //assert(8, sizeof(long int), "sizeof(long int)");
+  //assert(8, sizeof(long int), "sizeof(long int)");
   assert(8, sizeof(char *), "sizeof(char *)");
   assert(8, sizeof(int *), "sizeof(int *)");
   assert(8, sizeof(long *), "sizeof(long *)");
@@ -399,9 +399,9 @@ int main() {
   assert(1, (_Bool)1, "(_Bool)1");
   assert(1, (_Bool)2, "(_Bool)2");
   assert(0, (_Bool)(char)256, "(_Bool)(char)256");
-  assert(1, (long)1, "(long)1");
-  assert(0, (long)&*(int *)0, "(long)&*(int *)0");
-  assert(5, ({ int x=5; long y=(long)&x; *(int*)y; }), "int x=5; long y=(long)&x; *(int*)y");
+  //assert(1, (long)1, "(long)1");
+  //assert(0, (long)&*(int *)0, "(long)&*(int *)0");
+  //assert(5, ({ int x=5; long y=(long)&x; *(int*)y; }), "int x=5; long y=(long)&x; *(int*)y");
 
   assert(97, 'a', "'a'");
   assert(10, '\n', "\'\\n\'");
@@ -668,12 +668,12 @@ int main() {
   assert(1, _Alignof(char), "_Alignof(char)");
   assert(2, _Alignof(short), "_Alignof(short)");
   assert(4, _Alignof(int), "_Alignof(int)");
-  assert(8, _Alignof(long), "_Alignof(long)");
-  assert(8, _Alignof(long long), "_Alignof(long long)");
+  //assert(8, _Alignof(long), "_Alignof(long)");
+  //assert(8, _Alignof(long long), "_Alignof(long long)");
   assert(1, _Alignof(char[3]), "_Alignof(char[3])");
   assert(4, _Alignof(int[3]), "_Alignof(int[3])");
   assert(1, _Alignof(struct {char a; char b;}[2]), "_Alignof(struct {char a; char b;}[2])");
-  assert(8, _Alignof(struct {char a; long b;}[2]), "_Alignof(struct {char a; long b;}[2])");
+  //assert(8, _Alignof(struct {char a; long b;}[2]), "_Alignof(struct {char a; long b;}[2])");
 
   assert(2, counter(), "counter()");
   assert(4, counter(), "counter()");
@@ -724,21 +724,21 @@ int main() {
   assert(4, sizeof(signed), "sizeof(signed)");
   assert(4, sizeof(signed signed), "sizeof(signed signed)");
 
-  assert(8, sizeof(long), "sizeof(long)");
-  assert(8, sizeof(signed long), "sizeof(signed long)");
-  assert(8, sizeof(signed long int), "sizeof(signed long int)");
+  //assert(8, sizeof(long), "sizeof(long)");
+  //assert(8, sizeof(signed long), "sizeof(signed long)");
+  //assert(8, sizeof(signed long int), "sizeof(signed long int)");
 
-  assert(8, sizeof(long long), "sizeof(long long)");
-  assert(8, sizeof(signed long long), "sizeof(signed long long)");
-  assert(8, sizeof(signed long long int), "sizeof(signed long long int)");
+  //assert(8, sizeof(long long), "sizeof(long long)");
+  //assert(8, sizeof(signed long long), "sizeof(signed long long)");
+  //assert(8, sizeof(signed long long int), "sizeof(signed long long int)");
 
   assert(4, sizeof(0), "sizeof(0)");
-  assert(8, sizeof(0L), "sizeof(0L)");
-  assert(8, sizeof(0LL), "sizeof(0LL)");
-  assert(8, sizeof(0l), "sizeof(0l)");
-  assert(8, sizeof(0ll), "sizeof(0ll)");
-  assert(8, sizeof(0x0L), "sizeof(0x0L)");
-  assert(8, sizeof(0b0L), "sizeof(0b0L)");
+  //assert(8, sizeof(0L), "sizeof(0L)");
+  //assert(8, sizeof(0LL), "sizeof(0LL)");
+  //assert(8, sizeof(0l), "sizeof(0l)");
+  //assert(8, sizeof(0ll), "sizeof(0ll)");
+  //assert(8, sizeof(0x0L), "sizeof(0x0L)");
+  //assert(8, sizeof(0b0L), "sizeof(0b0L)");
   assert(4, sizeof(2147483647), "sizeof(2147483647)");
   assert(8, sizeof(2147483648), "sizeof(2147483648)");
 

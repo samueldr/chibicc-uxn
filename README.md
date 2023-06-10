@@ -15,7 +15,7 @@ uxnemu c.rom
 
 ## Details
 
-`short int long` are all 16 bits. There are no floats. Arrays, structs, and enums are supported.
+`short` and `int` are both 16 bits; `long` and `long long` are not supported. There are no floats. Arrays, structs, and enums are supported.
 
 The function names `deo deo2 dei dei2 brk` are "intrinsics" corresponding to the uxn instructions. There is a header `uxn.h` defining their prototypes and some useful wrappers around Varvara APIs.
 

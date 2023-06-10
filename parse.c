@@ -257,11 +257,10 @@ Program *program(void) {
 // basetype = builtin-type | struct-decl | typedef-name | enum-specifier
 //
 // builtin-type = "void" | "_Bool" | "char" | "short" | "int"
-//              | "long" | "long" "long"
 //
 // Note that "typedef" and "static" can appear anywhere in a basetype.
-// "int" can appear anywhere if type is short, long or long long.
-// "signed" can appear anywhere if type is short, int, long or long long.
+// "int" can appear anywhere if type is short.
+// "signed" can appear anywhere if type is short or int.
 static Type *basetype(StorageClass *sclass) {
   if (!is_typename())
     error_tok(token, "typename expected");
@@ -272,7 +271,7 @@ static Type *basetype(StorageClass *sclass) {
     CHAR   = 1 << 4,
     SHORT  = 1 << 6,
     INT    = 1 << 8,
-    LONG   = 1 << 10,
+    //LONG   = 1 << 10,
     OTHER  = 1 << 12,
     SIGNED = 1 << 13,
   };
@@ -305,7 +304,7 @@ static Type *basetype(StorageClass *sclass) {
 
     // Handle user-defined types.
     if (!peek("void") && !peek("_Bool") && !peek("char") &&
-        !peek("short") && !peek("int") && !peek("long") &&
+        !peek("short") && !peek("int") && //!peek("long") &&
         !peek("signed")) {
       if (counter)
         break;
@@ -335,8 +334,8 @@ static Type *basetype(StorageClass *sclass) {
       counter += SHORT;
     else if (consume("int"))
       counter += INT;
-    else if (consume("long"))
-      counter += LONG;
+    //else if (consume("long"))
+    //  counter += LONG;
     else if (consume("signed"))
       counter |= SIGNED;
 
@@ -362,16 +361,16 @@ static Type *basetype(StorageClass *sclass) {
     case SIGNED + INT:
       ty = int_type;
       break;
-    case LONG:
-    case LONG + INT:
-    case LONG + LONG:
-    case LONG + LONG + INT:
-    case SIGNED + LONG:
-    case SIGNED + LONG + INT:
-    case SIGNED + LONG + LONG:
-    case SIGNED + LONG + LONG + INT:
-      ty = long_type;
-      break;
+    //case LONG:
+    //case LONG + INT:
+    //case LONG + LONG:
+    //case LONG + LONG + INT:
+    //case SIGNED + LONG:
+    //case SIGNED + LONG + INT:
+    //case SIGNED + LONG + LONG:
+    //case SIGNED + LONG + LONG + INT:
+    //  ty = long_type;
+    //  break;
     default:
       error_tok(tok, "invalid type");
     }
@@ -1131,7 +1130,7 @@ static Node *read_expr_stmt(void) {
 // Returns true if the next token represents a type.
 static bool is_typename(void) {
   return peek("void") || peek("_Bool") || peek("char") || peek("short") ||
-         peek("int") || peek("long") || peek("enum") || peek("struct") ||
+         peek("int") || /*peek("long") ||*/ peek("enum") || peek("struct") ||
          peek("typedef") || peek("static") || peek("extern") ||
          peek("signed") || find_typedef(token);
 }

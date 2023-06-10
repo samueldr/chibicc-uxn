@@ -5,6 +5,8 @@ mkdir -p $TMP
 
 expand() {
     file=$1
+    # FIXME: these definitions won't compile for uxn. is trying to run chibicc
+    # for uxn in uxn even realistic? hehe
     cat <<EOF > $TMP/$1
 typedef struct FILE FILE;
 extern FILE *stdout;

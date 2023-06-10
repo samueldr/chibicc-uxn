@@ -5,12 +5,12 @@ Type *bool_type  = &(Type){ TY_BOOL, 1, 2 };
 Type *char_type  = &(Type){ TY_CHAR, 1, 2 };
 Type *short_type = &(Type){ TY_SHORT, 2, 2 };
 Type *int_type   = &(Type){ TY_INT, 2, 2 };
-Type *long_type  = &(Type){ TY_LONG, 2, 2 };
+//Type *long_type  = &(Type){ TY_LONG, 4, 4 };
 
 bool is_integer(Type *ty) {
   TypeKind k = ty->kind;
   return k == TY_BOOL || k == TY_CHAR || k == TY_SHORT ||
-         k == TY_INT  ||k == TY_LONG;
+         k == TY_INT; //  ||k == TY_LONG;
 }
 
 int align_to(int n, int align) {
@@ -88,7 +88,8 @@ void add_type(Node *node) {
   case ND_NOT:
   case ND_LOGOR:
   case ND_LOGAND:
-    node->ty = long_type;
+    //node->ty = long_type;
+    node->ty = int_type;
     return;
   case ND_PTR_ADD:
   case ND_PTR_SUB:
