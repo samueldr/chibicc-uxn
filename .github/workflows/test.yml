@@ -1,0 +1,24 @@
+name: test uxn
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Make chibicc
+        run: make
+      - name: Get uxn
+        run: |
+          git clone https://git.sr.ht/\~rabbits/uxn
+          gcc uxn/src/uxn.c uxn/src/devices/system.c uxn/src/devices/file.c uxn/src/devices/datetime.c uxn/src/uxncli.c -o uxncli
+          gcc uxn/src/uxnasm.c -o uxnasm
+      - name: Test putchar
+        run: |
+          gcc -I. -P -E examples/putchar.c -o tmp.c
+          ./chibicc tmp.c > c.tal
+          ./uxnasm c.tal c.rom
+          echo -n a > expected
+          ./uxncli c.rom > actual
+          diff expected actual

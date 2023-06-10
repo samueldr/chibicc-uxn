@@ -7,6 +7,7 @@ void brk();
 
 // https://wiki.xxiivv.com/site/varvara.html
 #define palette(r, g, b) (deo2(0x08, r), deo2(0x0a, g), deo2(0x0c, b))
+#define exit(status) (deo(0x0f, status | 0x80))
 #define putchar(c) deo(0x18, c)
 #define set_screen_size(width, height) (deo2(0x22, width), deo2(0x24, height))
 #define set_spr_auto(a) deo(0x26, a)

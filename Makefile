@@ -1,5 +1,5 @@
 CFLAGS=-std=c11 -g -static -fno-common
-SRCS=$(wildcard *.c)
+SRCS=codegen.c main.c parse.c tokenize.c type.c
 OBJS=$(SRCS:.c=.o)
 
 chibicc: $(OBJS)
