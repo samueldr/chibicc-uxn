@@ -1,25 +1,25 @@
 // Raw interface to uxn's "devices"
-void deo(char device, char data);
-void deo2(char device, int data);
+void deo(char data, char device);
+void deo2(int data, char device);
 char dei(char device);
 int dei2(char device);
 void brk();
 
 // https://wiki.xxiivv.com/site/varvara.html
-#define palette(r, g, b) (deo2(0x08, r), deo2(0x0a, g), deo2(0x0c, b))
-#define exit(status) (deo(0x0f, status | 0x80))
-#define putchar(c) deo(0x18, c)
-#define set_screen_size(width, height) (deo2(0x22, width), deo2(0x24, height))
-#define set_spr_auto(a) deo(0x26, a)
-#define set_spr_x(x) deo2(0x28, x)
-#define set_spr_y(y) deo2(0x2a, y)
+#define palette(r, g, b) (deo2(r, 0x08), deo2(g, 0x0a), deo2(b, 0x0c))
+#define exit(status) (deo(status | 0x80, 0x0f))
+#define putchar(c) deo(c, 0x18)
+#define set_screen_size(width, height) (deo2(width, 0x22), deo2(height, 0x24))
+#define set_spr_auto(a) deo(a, 0x26)
+#define set_spr_x(x) deo2(x, 0x28)
+#define set_spr_y(y) deo2(y, 0x2a)
 #define spr_x() dei2(0x28)
 #define spr_y() dei2(0x2a)
-#define set_spr_addr(a) deo2(0x2c, a)
-#define draw_pixel(a) deo(0x2e, a)
-#define draw_sprite(a) deo(0x2f, a)
+#define set_spr_addr(a) deo2(a, 0x2c)
+#define draw_pixel(a) deo(a, 0x2e)
+#define draw_sprite(a) deo(a, 0x2f)
 
-#define set_controller_vector(a) deo2(0x80, a)
+#define set_controller_vector(a) deo2(a, 0x80)
 #define controller_button() dei(0x82)
 #define controller_key() dei(0x83)
 

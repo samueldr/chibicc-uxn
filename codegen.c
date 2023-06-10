@@ -613,15 +613,15 @@ static void gen(Node *node) {
       return;
     }
     if (!strcmp(node->funcname, "deo")) {
-      gen(node->args->next);
-      printf("  NIP\n");
       gen(node->args);
+      printf("  NIP\n");
+      gen(node->args->next);
       printf("  NIP DEOk\n"); // Will be followed by POP2
       return;
     }
     if (!strcmp(node->funcname, "deo2")) {
-      gen(node->args->next);
       gen(node->args);
+      gen(node->args->next);
       printf("  NIP DEO2k POP\n"); // Will be followed by POP2
       return;
     }
