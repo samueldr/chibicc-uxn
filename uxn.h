@@ -29,6 +29,7 @@ typedef struct {
 #define getchar console_read
 #define putchar console_write
 
+#define set_screen_vector(func) deo2(func, 0x20)
 #define set_screen_size(width, height) (deo2(width, 0x22), deo2(height, 0x24))
 #define set_spr_auto(a) deo(a, 0x26)
 #define set_spr_x(x) deo2(x, 0x28)
