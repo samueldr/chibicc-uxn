@@ -52,6 +52,12 @@ static void gen_lval(Node *node) {
   gen_addr(node);
 }
 
+// 8-bit to 16-bit sign extension
+// TODO: move this to a helper function in the generated code to save space?
+static void sext(void) {
+  printf("  #80 ANDk EQU #ff MUL SWP\n");
+}
+
 static void load(Type *ty) {
   // printf("  pop rax\n");
 
@@ -68,7 +74,8 @@ static void load(Type *ty) {
 
   // printf("  push rax\n");
   if (ty->size == 1) {
-    printf("  LDA #00 SWP\n");
+    printf("  LDA\n");
+    sext();
   } else {
     printf("  LDA2\n");
   }
@@ -124,7 +131,8 @@ static void truncate(Type *ty) {
   if (ty->kind == TY_BOOL) {
     printf("  #0000 NEQ2 #00 SWP\n");
   } else if (ty->size == 1) {
-    printf("  NIP #00 SWP\n");
+    printf("  NIP\n");
+    sext();
   }
 }
 
