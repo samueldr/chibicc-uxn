@@ -13,7 +13,20 @@ uxnasm c.tal c.rom
 uxnemu c.rom
 ```
 
-See also `make test`, which runs a test suite (currently failing).
+See also `make test`, which runs a test suite (currently failing). It needs a patched version of uxnasm:
+
+```patch
+diff --git a/src/uxnasm.c b/src/uxnasm.c
+index b42ba78..07f6e7f 100644
+--- a/src/uxnasm.c
++++ b/src/uxnasm.c
+@@ -42 +42 @@ typedef struct {
+-       Reference refs[0x800];
++       Reference refs[0x8000];
+@@ -182 +182 @@ makereference(char *scope, char *label, char rune, Uint16 addr)
+-       if(p.rlen >= 0x800)
++       if(p.rlen >= 0x8000)
+```
 
 ## Details
 
