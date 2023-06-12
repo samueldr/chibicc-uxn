@@ -6,10 +6,36 @@
  * This is a block comment.
  */
 
-int printf();
-int exit();
-int strcmp(char *p, char *q);
-int memcmp(char *p, char *q);
+#include <uxn.h>
+void puts(char *s) {
+  for (; *s; *s++) putchar(*s);
+  putchar('\n');
+}
+void put_hex(int word) {
+  char hex[16] = "0123456789abcdef";
+  for (int i = 0; i < 4; i++) {
+    putchar(hex[(word >> ((3 - i) * 4)) & 0xf]);
+  }
+  putchar('\n');
+}
+int strcmp(char *a, char *b) {
+  for (;;) {
+    char ac = *a++;
+    char bc = *b++;
+    if (ac - bc || (!ac && !bc)) {
+      return ac - bc;
+    }
+  }
+}
+int memcmp(void *a, void *b, int count) {
+  for (int i = 0; i < count; i++) {
+    char ac = *(*(char**)&a)++;
+    char bc = *(*(char**)&b)++;
+    if (ac - bc) {
+      return ac - bc;
+    }
+  }
+}
 
 int g1;
 int g2[4];
@@ -19,30 +45,32 @@ typedef int MyInt;
 char g3 = 3;
 short g4 = 4;
 int g5 = 5;
+// long isn't supported
 //long g6 = 6;
-int *g7 = &g5;
-char *g8 = "abc";
+//int *g7 = &g5;
+//char *g8 = "abc";
 int g9[3] = {0, 1, 2};
-char *g10[] = {"foo", "bar"};
+//char *g10[] = {"foo", "bar"};
 struct {char a; int b;} g11[2] = {{1, 2}, {3, 4}};
 struct {int a[2];} g12[2] = {{{1, 2}}};
 struct {int a[2];} g13[2] = {{1, 2}, 3, 4};
 struct {int a[2];} g14[2] = {1, 2, 3, 4};
-char *g15 = {"foo"};
+//char *g15 = {"foo"};
 char g16[][4] = {'f', 'o', 'o', 0, 'b', 'a', 'r', 0};
 char g17[] = "foobar";
 char g18[10] = "foobar";
 char g19[3] = "foobar";
-char *g20 = g17+0;
-char *g21 = g17+3;
-char *g22 = &g17-3;
-char *g23[] = {g17+0, g17+3, g17-3};
+//char *g20 = g17+0;
+//char *g21 = g17+3;
+//char *g22 = &g17-3;
+//char *g23[] = {g17+0, g17+3, g17-3};
 int g24=3;
-int *g25=&g24;
+//int *g25=&g24;
 int g26[3] = {1, 2, 3};
-int *g27 = g26 + 1;
+//int *g27 = g26 + 1;
 
-typedef struct Tree {
+// this is also label+addend
+/*typedef struct Tree {
   int val;
   struct Tree *lhs;
   struct Tree *rhs;
@@ -56,11 +84,12 @@ Tree *tree = &(Tree){
     &(Tree){ 4, 0, 0 },
   },
   0,
-};
+};*/
 
-extern int ext1;
-extern int *ext2;
-static int ext3 = 3;
+// TODO: restore extern tests (separate uxntal file?)
+//extern int ext1;
+//extern int *ext2;
+//static int ext3 = 3;
 
 int;
 struct {char a; int b;};
@@ -68,11 +97,18 @@ typedef struct {char a; int b;} Ty1;
 
 int assert(int /*long*/ expected, int /*long*/ actual, char *code) {
   if (expected == actual) {
-    printf("%s => %ld\n", code, actual);
+    puts(code);
+    puts("matched expected =>");
+    put_hex(actual);
   } else {
-    printf("%s => %ld expected but got %ld\n", code, expected, actual);
+    puts(code);
+    puts("did not match expected =>");
+    put_hex(expected);
+    puts("instead got");
+    put_hex(actual);
     exit(1);
   }
+  putchar('\n');
 }
 
 int ret3() {
@@ -122,7 +158,9 @@ void ret_none() {
   return;
 }
 
-static int static_fn() { return 3; }
+// also extern (this definition is in this file but the test is to check the
+// definition in another file isn't used)
+//static int static_fn() { return 3; }
 
 int param_decay(int x[]) { return x[0]; }
 
@@ -134,11 +172,13 @@ int counter() {
   return i++ + j++;
 }
 
-_Bool true_fn();
-_Bool false_fn();
+// also extern
+//_Bool true_fn();
+//_Bool false_fn();
 
-int add_all1(int x, ...);
-int add_all3(int z, int b, int c, ...);
+// also extern
+//int add_all1(int x, ...);
+//int add_all3(int z, int b, int c, ...);
 
 int main() {
   assert(8, ({ int a=3; int z=5; a+z; }), "int a=3; int z=5; a+z;");
@@ -385,7 +425,7 @@ int main() {
   //assert(8, sizeof(long int), "sizeof(long int)");
   assert(8, sizeof(char *), "sizeof(char *)");
   assert(8, sizeof(int *), "sizeof(int *)");
-  assert(8, sizeof(long *), "sizeof(long *)");
+  //assert(8, sizeof(long *), "sizeof(long *)");
   assert(8, sizeof(int **), "sizeof(int **)");
   assert(8, sizeof(int(*)[4]), "sizeof(int(*)[4])");
   assert(32, sizeof(int*[4]), "sizeof(int(*)[4])");
@@ -393,9 +433,10 @@ int main() {
   assert(48, sizeof(int[3][4]), "sizeof(int[3][4])");
   assert(8, sizeof(struct {int a; int b;}), "sizeof(struct {int a; int b;})");
 
-  assert(131585, (int)8590066177, "(int)8590066177");
-  assert(513, (short)8590066177, "(short)8590066177");
-  assert(1, (char)8590066177, "(char)8590066177");
+  // TODO: new truncation tests, these ones' literals are too big
+  //assert(131585, (int)8590066177, "(int)8590066177");
+  //assert(513, (short)8590066177, "(short)8590066177");
+  //assert(1, (char)8590066177, "(char)8590066177");
   assert(1, (_Bool)1, "(_Bool)1");
   assert(1, (_Bool)2, "(_Bool)2");
   assert(0, (_Bool)(char)256, "(_Bool)(char)256");
@@ -418,7 +459,7 @@ int main() {
   assert(4, ({ enum { zero, one, two } x; sizeof(x); }), "enum { zero, one, two } x; sizeof(x);");
   assert(4, ({ enum t { zero, one, two }; enum t y; sizeof(y); }), "enum t { zero, one, two }; enum t y; sizeof(y);");
 
-  assert(3, static_fn(), "static_fn()");
+  //assert(3, static_fn(), "static_fn()");
 
   assert(55, ({ int j=0; for (int i=0; i<=10; i=i+1) j=j+i; j; }), "int j=0; for (int i=0; i<=10; i=i+1) j=j+i; j;");
   assert(3, ({ int i=3; int j=0; for (int i=0; i<=10; i=i+1) j=j+i; i; }), "int i=3; int j=0; for (int i=0; i<=10; i=i+1) j=j+i; i;");
@@ -454,9 +495,9 @@ int main() {
   assert(0, 0x0, "0x0");
   assert(10, 0xa, "0xa");
   assert(10, 0XA, "0XA");
-  assert(48879, 0xbeef, "0xbeef");
-  assert(48879, 0xBEEF, "0xBEEF");
-  assert(48879, 0XBEEF, "0XBEEF");
+  //assert(48879, 0xbeef, "0xbeef");
+  //assert(48879, 0xBEEF, "0xBEEF");
+  //assert(48879, 0XBEEF, "0XBEEF");
   assert(0, 0b0, "0b0");
   assert(1, 0b1, "0b1");
   assert(47, 0b101111, "0b101111");
@@ -594,18 +635,18 @@ int main() {
   assert(3, g3, "g3");
   assert(4, g4, "g4");
   assert(5, g5, "g5");
-  assert(6, g6, "g6");
-  assert(5, *g7, "*g7");
-  assert(0, strcmp(g8, "abc"), "strcmp(g8, \"abc\")");
+  //assert(6, g6, "g6");
+  //assert(5, *g7, "*g7");
+  //assert(0, strcmp(g8, "abc"), "strcmp(g8, \"abc\")");
 
   assert(0, g9[0], "g9[0]");
   assert(1, g9[1], "g9[1]");
   assert(2, g9[2], "g9[2]");
 
-  assert(0, strcmp(g10[0], "foo"), "strcmp(g10[0], \"foo\")");
-  assert(0, strcmp(g10[1], "bar"), "strcmp(g10[1], \"bar\")");
-  assert(0, g10[1][3], "g10[1][3]");
-  assert(2, sizeof(g10) / sizeof(*g10), "sizeof(g10) / sizeof(*g10)");
+  //assert(0, strcmp(g10[0], "foo"), "strcmp(g10[0], \"foo\")");
+  //assert(0, strcmp(g10[1], "bar"), "strcmp(g10[1], \"bar\")");
+  //assert(0, g10[1][3], "g10[1][3]");
+  //assert(2, sizeof(g10) / sizeof(*g10), "sizeof(g10) / sizeof(*g10)");
 
   assert(1, g11[0].a, "g11[0].a");
   assert(2, g11[0].b, "g11[0].b");
@@ -633,7 +674,7 @@ int main() {
   assert(0, ({ struct {int a; int b;} x[2]={0,1,2,3}; x[0].a; }), "struct {int a; int b;} x[2]={0,1,2,3}; x[0].a;");
   assert(2, ({ struct {int a; int b;} x[2]={0,1,2,3}; x[1].a; }), "struct {int a; int b;} x[2]={0,1,2,3}; x[1].a;");
 
-  assert(0, strcmp(g15, "foo"), "strcmp(g15, \"foo\")");
+  //assert(0, strcmp(g15, "foo"), "strcmp(g15, \"foo\")");
   assert(0, strcmp(g16[0], "foo"), "strcmp(g16[0], \"foo\")");
   assert(0, strcmp(g16[1], "bar"), "strcmp(g16[1], \"bar\")");
 
@@ -645,23 +686,23 @@ int main() {
   assert(0, memcmp(g18, "foobar\0\0\0", 10), "memcmp(g18, \"foobar\\0\\0\\0\", 10)");
   assert(0, memcmp(g19, "foo", 3), "memcmp(g19, \"foo\", 3)");
 
-  assert(0, strcmp(g20, "foobar"), "strcmp(g20, \"foobar\")");
-  assert(0, strcmp(g21, "bar"), "strcmp(g21, \"bar\")");
-  assert(0, strcmp(g22+3, "foobar"), "strcmp(g22+3, \"foobar\")");
+  //assert(0, strcmp(g20, "foobar"), "strcmp(g20, \"foobar\")");
+  //assert(0, strcmp(g21, "bar"), "strcmp(g21, \"bar\")");
+  //assert(0, strcmp(g22+3, "foobar"), "strcmp(g22+3, \"foobar\")");
 
-  assert(0, strcmp(g23[0], "foobar"), "strcmp(g23[0], \"foobar\")");
-  assert(0, strcmp(g23[1], "bar"), "strcmp(g23[1], \"bar\")");
-  assert(0, strcmp(g23[2]+3, "foobar"), "strcmp(g23[2]+3, \"foobar\")");
+  //assert(0, strcmp(g23[0], "foobar"), "strcmp(g23[0], \"foobar\")");
+  //assert(0, strcmp(g23[1], "bar"), "strcmp(g23[1], \"bar\")");
+  //assert(0, strcmp(g23[2]+3, "foobar"), "strcmp(g23[2]+3, \"foobar\")");
 
   assert(3, g24, "g24");
-  assert(3, *g25, "*g25");
-  assert(2, *g27, "*g27");
+  //assert(3, *g25, "*g25");
+  //assert(2, *g27, "*g27");
 
-  ext1 = 5;
-  assert(5, ext1, "ext1");
+  //ext1 = 5;
+  //assert(5, ext1, "ext1");
 
-  ext2 = &ext1;
-  assert(5, *ext2, "*ext2");
+  //ext2 = &ext1;
+  //assert(5, *ext2, "*ext2");
 
   ;
 
@@ -684,14 +725,14 @@ int main() {
   assert('a', ((struct {char a; int b;}){'a', 3}).a, "((struct {char a; int b;}){'a', 3}).a");
   assert(3, ({ int x=3; (int){x}; }), "int x=3; (int){x};");
 
-  assert(1, tree->val, "tree->val");
-  assert(2, tree->lhs->val, "tree->lhs->val");
-  assert(3, tree->lhs->lhs->val, "tree->lhs->lhs->val");
-  assert(4, tree->lhs->rhs->val, "tree->lhs->rhs->val");
+  //assert(1, tree->val, "tree->val");
+  //assert(2, tree->lhs->val, "tree->lhs->val");
+  //assert(3, tree->lhs->lhs->val, "tree->lhs->lhs->val");
+  //assert(4, tree->lhs->rhs->val, "tree->lhs->rhs->val");
 
   ret_none();
 
-  assert(3, ext3, "ext3");
+  //assert(3, ext3, "ext3");
 
   assert(2, ({ int i=6; i&=3; i; }), "int i=6; i&=3; i;");
   assert(7, ({ int i=6; i|=3; i; }), "int i=6; i|=3; i;");
@@ -700,14 +741,14 @@ int main() {
   assert(7, ({ int i=0; int j=0; do { j++; } while (i++ < 6); j; }), "int i=0; int j=0; do { j++; } while (i++ < 6); j;");
   assert(4, ({ int i=0; int j=0; int k=0; do { if (++j > 3) break; continue; k++; } while (1); j; }), "int i=0; int j=0; int k=0; do { if (j++ > 3) break; continue; k++; } while (1); j;");
 
-  assert(1, true_fn(), "true_fn()");
-  assert(0, false_fn(), "false_fn()");
+  //assert(1, true_fn(), "true_fn()");
+  //assert(0, false_fn(), "false_fn()");
 
-  assert(6, add_all1(1,2,3,0), "add_all1(1,2,3,0)");
-  assert(5, add_all1(1,2,3,-1,0), "add_all1(1,2,3,-1,0)");
+  //assert(6, add_all1(1,2,3,0), "add_all1(1,2,3,0)");
+  //assert(5, add_all1(1,2,3,-1,0), "add_all1(1,2,3,-1,0)");
 
-  assert(6, add_all3(1,2,3,0), "add_all3(1,2,3,0)");
-  assert(5, add_all3(1,2,3,-1,0), "add_all3(1,2,3,-1,0)");
+  //assert(6, add_all3(1,2,3,0), "add_all3(1,2,3,0)");
+  //assert(5, add_all3(1,2,3,-1,0), "add_all3(1,2,3,-1,0)");
 
   assert(1, sizeof(char), "sizeof(char)");
   assert(1, sizeof(signed char), "sizeof(signed char)");
@@ -719,10 +760,10 @@ int main() {
   assert(2, sizeof(signed short), "sizeof(signed short)");
   assert(2, sizeof(int short signed), "sizeof(int short signed)");
 
-  assert(4, sizeof(int), "sizeof(int)");
-  assert(4, sizeof(signed int), "sizeof(signed int)");
-  assert(4, sizeof(signed), "sizeof(signed)");
-  assert(4, sizeof(signed signed), "sizeof(signed signed)");
+  assert(2, sizeof(int), "sizeof(int)");
+  assert(2, sizeof(signed int), "sizeof(signed int)");
+  assert(2, sizeof(signed), "sizeof(signed)");
+  assert(2, sizeof(signed signed), "sizeof(signed signed)");
 
   //assert(8, sizeof(long), "sizeof(long)");
   //assert(8, sizeof(signed long), "sizeof(signed long)");
@@ -732,16 +773,16 @@ int main() {
   //assert(8, sizeof(signed long long), "sizeof(signed long long)");
   //assert(8, sizeof(signed long long int), "sizeof(signed long long int)");
 
-  assert(4, sizeof(0), "sizeof(0)");
+  assert(2, sizeof(0), "sizeof(0)");
   //assert(8, sizeof(0L), "sizeof(0L)");
   //assert(8, sizeof(0LL), "sizeof(0LL)");
   //assert(8, sizeof(0l), "sizeof(0l)");
   //assert(8, sizeof(0ll), "sizeof(0ll)");
   //assert(8, sizeof(0x0L), "sizeof(0x0L)");
   //assert(8, sizeof(0b0L), "sizeof(0b0L)");
-  assert(4, sizeof(2147483647), "sizeof(2147483647)");
-  assert(8, sizeof(2147483648), "sizeof(2147483648)");
+  //assert(4, sizeof(2147483647), "sizeof(2147483647)");
+  //assert(8, sizeof(2147483648), "sizeof(2147483648)");
 
-  printf("OK\n");
+  puts("OK");
   return 0;
 }

@@ -26,7 +26,7 @@ static void gen_addr(Node *node) {
       else
         printf("  #%04x .rbp LDZ2 ADD2\n", var->offset);
     } else {
-      printf("  ;%s\n", var->name);
+      printf("  ;%s_\n", var->name);
     }
     return;
   }
@@ -646,7 +646,8 @@ static void gen(Node *node) {
       return;
     }
 
-    args_backwards(node->args);
+    if (node->args)
+      args_backwards(node->args);
     int offset = 0;
     for (Node *arg = node->args; arg; arg = arg->next) {
       offset += 2;
@@ -682,7 +683,7 @@ static void gen(Node *node) {
     // if (node->ty->kind == TY_BOOL)
     //   printf("  movzb rax, al\n");
     // printf("  push rax\n");
-    printf("  %s\n", node->funcname);
+    printf("  %s_\n", node->funcname);
     return;
   }
   case ND_RETURN:
@@ -716,7 +717,9 @@ static void emit_data(Program *prog) {
       continue;
 
     // printf("( align %d )\n", var->ty->align);
-    printf("@%s $%x", var->name, var->ty->size);
+    // Name is suffixed with _ so that uxnasm won't complain if it happens to be
+    // hexadecimal.
+    printf("@%s_ $%x\n", var->name, var->ty->size);
   }
 
   printf("( data )\n");
@@ -727,11 +730,11 @@ static void emit_data(Program *prog) {
       continue;
 
     // printf(".align %d\n", var->ty->align);
-    printf("@%s\n", var->name);
+    printf("@%s_\n", var->name);
 
     for (Initializer *init = var->initializer; init; init = init->next) {
       if (init->label)
-        error("unsupported label+addend");
+        error("unsupported initializer (label+addend) for var \"%s\" (label \"%s\")", var->name, init->label);
       else if (init->sz == 1)
         printf("  %02x\n", (unsigned char)init->val);
       else if (init->sz == 2)
@@ -762,7 +765,9 @@ static void emit_text(Program *prog) {
   for (Function *fn = prog->fns; fn; fn = fn->next) {
     // if (!fn->is_static)
     //   printf(".global %s\n", fn->name);
-    printf("@%s\n", fn->name);
+    // Name is suffixed with _ so that uxnasm won't complain if it happens to be
+    // hexadecimal.
+    printf("@%s_\n", fn->name);
     funcname = fn->name;
 
     // Prologue
@@ -812,7 +817,7 @@ static void emit_text(Program *prog) {
 
 void codegen(Program *prog) {
   printf("|0000 @rbp $2\n");
-  printf("|0100 #ff00 .rbp STZ2 main BRK\n");
+  printf("|0100 #ff00 .rbp STZ2 main_ BRK\n");
   emit_data(prog);
   emit_text(prog);
 }

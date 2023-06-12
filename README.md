@@ -13,9 +13,13 @@ uxnasm c.tal c.rom
 uxnemu c.rom
 ```
 
+See also `make test`, which runs a test suite (currently failing).
+
 ## Details
 
 `short` and `int` are both 16 bits; `long` and `long long` are not supported. There are no floats. Arrays, structs, and enums are supported.
+
+Pointers in global variable initializers aren't supported, so e.g. `int *b = &a;` and `char* foo = "bar";` won't work. `char foo[] = "bar";` is fine though.
 
 The function names `deo deo2 dei dei2 brk` are "intrinsics" corresponding to the uxn instructions. There is a header `uxn.h` defining their prototypes and some useful wrappers around Varvara APIs.
 

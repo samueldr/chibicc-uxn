@@ -19,7 +19,7 @@ typedef struct {
 #define friend(func) deo2(func, 0x04)
 #define palette(r, g, b) (deo2(r, 0x08), deo2(g, 0x0a), deo2(b, 0x0c))
 #define debug() deo(0x01, 0x0e)
-#define exit(status) deo(status | 0x80, 0x0f)
+#define exit(status) (deo(status | 0x80, 0x0f), brk())
 
 #define set_console_vector(func) deo2(func, 0x10)
 #define console_read() dei(0x12)
