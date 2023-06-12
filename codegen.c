@@ -733,9 +733,13 @@ static void emit_data(Program *prog) {
     printf("@%s_\n", var->name);
 
     for (Initializer *init = var->initializer; init; init = init->next) {
-      if (init->label)
-        error("unsupported initializer (label+addend) for var \"%s\" (label \"%s\")", var->name, init->label);
-      else if (init->sz == 1)
+      if (init->label) {
+        if (init->addend) {
+          // uxntal sadly has no way to express an offset to an addressing rune
+          error("unsupported initializer for var \"%s\": can't handle non-zero addend (%+ld) with label (\"%s\")", var->name, init->addend, init->label);
+        }
+        printf("  =%s_\n", init->label);
+      } else if (init->sz == 1)
         printf("  %02x\n", (unsigned char)init->val);
       else if (init->sz == 2)
         printf("  %04x\n", (unsigned short)init->val);

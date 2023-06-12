@@ -47,30 +47,30 @@ short g4 = 4;
 int g5 = 5;
 // long isn't supported
 //long g6 = 6;
-//int *g7 = &g5;
-//char *g8 = "abc";
+int *g7 = &g5;
+char *g8 = "abc";
 int g9[3] = {0, 1, 2};
-//char *g10[] = {"foo", "bar"};
+char *g10[] = {"foo", "bar"};
 struct {char a; int b;} g11[2] = {{1, 2}, {3, 4}};
 struct {int a[2];} g12[2] = {{{1, 2}}};
 struct {int a[2];} g13[2] = {{1, 2}, 3, 4};
 struct {int a[2];} g14[2] = {1, 2, 3, 4};
-//char *g15 = {"foo"};
+char *g15 = {"foo"};
 char g16[][4] = {'f', 'o', 'o', 0, 'b', 'a', 'r', 0};
 char g17[] = "foobar";
 char g18[10] = "foobar";
 char g19[3] = "foobar";
-//char *g20 = g17+0;
+char *g20 = g17+0;
+// label + non-zero addend isn't supported
 //char *g21 = g17+3;
 //char *g22 = &g17-3;
 //char *g23[] = {g17+0, g17+3, g17-3};
 int g24=3;
-//int *g25=&g24;
+int *g25=&g24;
 int g26[3] = {1, 2, 3};
 //int *g27 = g26 + 1;
 
-// this is also label+addend
-/*typedef struct Tree {
+typedef struct Tree {
   int val;
   struct Tree *lhs;
   struct Tree *rhs;
@@ -84,7 +84,7 @@ Tree *tree = &(Tree){
     &(Tree){ 4, 0, 0 },
   },
   0,
-};*/
+};
 
 // TODO: restore extern tests (separate uxntal file?)
 //extern int ext1;
@@ -636,17 +636,17 @@ int main() {
   assert(4, g4, "g4");
   assert(5, g5, "g5");
   //assert(6, g6, "g6");
-  //assert(5, *g7, "*g7");
-  //assert(0, strcmp(g8, "abc"), "strcmp(g8, \"abc\")");
+  assert(5, *g7, "*g7");
+  assert(0, strcmp(g8, "abc"), "strcmp(g8, \"abc\")");
 
   assert(0, g9[0], "g9[0]");
   assert(1, g9[1], "g9[1]");
   assert(2, g9[2], "g9[2]");
 
-  //assert(0, strcmp(g10[0], "foo"), "strcmp(g10[0], \"foo\")");
-  //assert(0, strcmp(g10[1], "bar"), "strcmp(g10[1], \"bar\")");
-  //assert(0, g10[1][3], "g10[1][3]");
-  //assert(2, sizeof(g10) / sizeof(*g10), "sizeof(g10) / sizeof(*g10)");
+  assert(0, strcmp(g10[0], "foo"), "strcmp(g10[0], \"foo\")");
+  assert(0, strcmp(g10[1], "bar"), "strcmp(g10[1], \"bar\")");
+  assert(0, g10[1][3], "g10[1][3]");
+  assert(2, sizeof(g10) / sizeof(*g10), "sizeof(g10) / sizeof(*g10)");
 
   assert(1, g11[0].a, "g11[0].a");
   assert(2, g11[0].b, "g11[0].b");
@@ -674,7 +674,7 @@ int main() {
   assert(0, ({ struct {int a; int b;} x[2]={0,1,2,3}; x[0].a; }), "struct {int a; int b;} x[2]={0,1,2,3}; x[0].a;");
   assert(2, ({ struct {int a; int b;} x[2]={0,1,2,3}; x[1].a; }), "struct {int a; int b;} x[2]={0,1,2,3}; x[1].a;");
 
-  //assert(0, strcmp(g15, "foo"), "strcmp(g15, \"foo\")");
+  assert(0, strcmp(g15, "foo"), "strcmp(g15, \"foo\")");
   assert(0, strcmp(g16[0], "foo"), "strcmp(g16[0], \"foo\")");
   assert(0, strcmp(g16[1], "bar"), "strcmp(g16[1], \"bar\")");
 
@@ -686,7 +686,7 @@ int main() {
   assert(0, memcmp(g18, "foobar\0\0\0", 10), "memcmp(g18, \"foobar\\0\\0\\0\", 10)");
   assert(0, memcmp(g19, "foo", 3), "memcmp(g19, \"foo\", 3)");
 
-  //assert(0, strcmp(g20, "foobar"), "strcmp(g20, \"foobar\")");
+  assert(0, strcmp(g20, "foobar"), "strcmp(g20, \"foobar\")");
   //assert(0, strcmp(g21, "bar"), "strcmp(g21, \"bar\")");
   //assert(0, strcmp(g22+3, "foobar"), "strcmp(g22+3, \"foobar\")");
 
@@ -695,7 +695,7 @@ int main() {
   //assert(0, strcmp(g23[2]+3, "foobar"), "strcmp(g23[2]+3, \"foobar\")");
 
   assert(3, g24, "g24");
-  //assert(3, *g25, "*g25");
+  assert(3, *g25, "*g25");
   //assert(2, *g27, "*g27");
 
   //ext1 = 5;
@@ -725,10 +725,10 @@ int main() {
   assert('a', ((struct {char a; int b;}){'a', 3}).a, "((struct {char a; int b;}){'a', 3}).a");
   assert(3, ({ int x=3; (int){x}; }), "int x=3; (int){x};");
 
-  //assert(1, tree->val, "tree->val");
-  //assert(2, tree->lhs->val, "tree->lhs->val");
-  //assert(3, tree->lhs->lhs->val, "tree->lhs->lhs->val");
-  //assert(4, tree->lhs->rhs->val, "tree->lhs->rhs->val");
+  assert(1, tree->val, "tree->val");
+  assert(2, tree->lhs->val, "tree->lhs->val");
+  assert(3, tree->lhs->lhs->val, "tree->lhs->lhs->val");
+  assert(4, tree->lhs->rhs->val, "tree->lhs->rhs->val");
 
   ret_none();
 

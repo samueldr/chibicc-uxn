@@ -32,7 +32,7 @@ index b42ba78..07f6e7f 100644
 
 `short` and `int` are both 16 bits; `long` and `long long` are not supported. There are no floats. Arrays, structs, and enums are supported.
 
-Pointers in global variable initializers aren't supported, so e.g. `int *b = &a;` and `char* foo = "bar";` won't work. `char foo[] = "bar";` is fine though.
+Global variable initializers can be pointers to other globals, but only without an offset, so e.g. `int *b = &a;` and `char *foo = "bar";` work, but not `int *b = &a + 1;`. This is because Uxntal can't express an offset to an absolute reference.
 
 The function names `deo deo2 dei dei2 brk` are "intrinsics" corresponding to the uxn instructions. There is a header `uxn.h` defining their prototypes and some useful wrappers around Varvara APIs.
 
