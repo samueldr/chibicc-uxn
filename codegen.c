@@ -646,13 +646,9 @@ static void gen(Node *node) {
       return;
     }
 
+    // Function arguments are passed via the uxn working stack.
     if (node->args)
       args_backwards(node->args);
-    int offset = 0;
-    for (Node *arg = node->args; arg; arg = arg->next) {
-      offset += 2;
-      printf("  .rbp LDZ2 #%04x SUB2 STA2\n", offset);
-    }
 
     // int nargs = 0;
     // for (Node *arg = node->args; arg; arg = arg->next) {
@@ -749,7 +745,12 @@ static void emit_data(Program *prog) {
   }
 }
 
-static void load_arg(Var *var, int idx) {
+static void load_arg(Var *var /*, int idx*/) {
+  if (var->ty->size == 1)
+    printf("  .rbp LDZ2 #%04x ADD2 STA POP\n", var->offset);
+  else
+    printf("  .rbp LDZ2 #%04x ADD2 STA2\n", var->offset);
+
   // int sz = var->ty->size;
   // if (sz == 1) {
   //   printf("  mov [rbp-%d], %s\n", var->offset, argreg1[idx]);
@@ -797,10 +798,10 @@ static void emit_text(Program *prog) {
       // printf("mov [rbp-56], rdi\n");
     }
 
-    // Push arguments to the stack
-    // int i = 0;
-    // for (VarList *vl = fn->params; vl; vl = vl->next)
-    //   load_arg(vl->var, i++);
+    // Push arguments to the in-memory stack from the uxn working stack
+    int i = 0;
+    for (VarList *vl = fn->params; vl; vl = vl->next)
+       load_arg(vl->var /*, i++*/);
 
     // Emit code
     for (Node *node = fn->node; node; node = node->next)
