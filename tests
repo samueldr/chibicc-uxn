@@ -180,7 +180,7 @@ int counter() {
 //int add_all1(int x, ...);
 //int add_all3(int z, int b, int c, ...);
 
-int main() {
+void main() {
   assert(8, ({ int a=3; int z=5; a+z; }), "int a=3; int z=5; a+z;");
 
   assert(0, 0, "0");
@@ -791,5 +791,5 @@ int main() {
   //assert(8, sizeof(2147483648), "sizeof(2147483648)");
 
   puts("OK");
-  return 0;
+  exit(0);
 }
