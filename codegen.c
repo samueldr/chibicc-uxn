@@ -97,6 +97,8 @@ static void store(Type *ty) {
 
   // printf("  push rdi\n");
   if (ty->size == 1) {
+    if (ty->kind == TY_BOOL)
+      printf("  #00 NEQ\n");
     printf("  DUP2 ROT2 STA POP\n");
   } else {
     printf("  DUP2 ROT2 STA2\n");
