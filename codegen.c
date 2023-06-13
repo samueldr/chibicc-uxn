@@ -9,6 +9,7 @@ static int labelseq = 1;
 static int brkseq;
 static int contseq;
 static char *funcname;
+static bool need_sext_helper;
 
 static void gen(Node *node);
 
@@ -52,12 +53,6 @@ static void gen_lval(Node *node) {
   gen_addr(node);
 }
 
-// 8-bit to 16-bit sign extension
-// TODO: move this to a helper function in the generated code to save space?
-static void sext(void) {
-  printf("  #80 ANDk EQU #ff MUL SWP\n");
-}
-
 static void load(Type *ty) {
   // printf("  pop rax\n");
 
@@ -74,8 +69,8 @@ static void load(Type *ty) {
 
   // printf("  push rax\n");
   if (ty->size == 1) {
-    printf("  LDA\n");
-    sext();
+    need_sext_helper = 1;
+    printf("  LDA sext\n");
   } else {
     printf("  LDA2\n");
   }
@@ -131,8 +126,8 @@ static void truncate(Type *ty) {
   if (ty->kind == TY_BOOL) {
     printf("  #0000 NEQ2 #00 SWP\n");
   } else if (ty->size == 1) {
-    printf("  NIP\n");
-    sext();
+    need_sext_helper = 1;
+    printf("  NIP sext\n");
   }
 }
 
@@ -828,6 +823,12 @@ static void emit_text(Program *prog) {
       printf("  .rbp LDZ2 #%04x ADD2 .rbp STZ2\n", fn->stack_size);
 
     printf("  JMP2r\n");
+  }
+
+  if (need_sext_helper) {
+    // 8-bit to 16-bit sign extension
+    printf("@sext\n");
+    printf("  #80 ANDk EQU #ff MUL SWP JMP2r\n");
   }
 }
 
