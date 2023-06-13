@@ -562,6 +562,7 @@ static void gen(Node *node) {
       printf("  DUP2 #%04x EQU2 ?.L.case.%d\n", (unsigned short)n->val,
              n->case_label);
     }
+    printf("  POP2\n");
 
     if (node->default_case) {
       int i = labelseq++;
@@ -573,14 +574,12 @@ static void gen(Node *node) {
     printf("  !.L.break.%d\n", seq);
     gen(node->then);
     printf("@.L.break.%d\n", seq);
-    printf("  POP2\n");
 
     brkseq = brk;
     return;
   }
   case ND_CASE:
     printf("@.L.case.%d\n", node->case_label);
-    printf("  POP2\n");
     gen(node->lhs);
     return;
   case ND_BLOCK:
