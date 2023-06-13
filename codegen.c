@@ -10,6 +10,7 @@ static int brkseq;
 static int contseq;
 static char *funcname;
 static bool need_sext_helper;
+static bool need_ashr_helper;
 
 static void gen(Node *node);
 
@@ -226,7 +227,8 @@ static void gen_binary(Node *node) {
   case ND_SHR_EQ:
     // printf("  mov cl, dil\n");
     // printf("  sar rax, cl\n");
-    printf("  NIP #0f AND SFT2\n");
+    need_ashr_helper = 1;
+    printf("  ashr\n");
     break;
   case ND_EQ:
     // printf("  cmp rax, rdi\n");
@@ -829,6 +831,27 @@ static void emit_text(Program *prog) {
     // 8-bit to 16-bit sign extension
     printf("@sext\n");
     printf("  #80 ANDk EQU #ff MUL SWP JMP2r\n");
+  }
+  if (need_ashr_helper) {
+    // 16-bit arithmetic right shift (uxn's SFT does logical right shift)
+    // If the sign bit was unset, this is ((uint16_t)a >> b)
+    // If the sign bit was set, this is ~((uint16_t)(~a) >> b)
+    // The double NOT has the effect of making the zeroes shifted in become ones
+    // to match the sign bit
+    printf("@ashr\n");
+    // Swap value to be shifted with shift amount
+    printf("  SWP2\n");
+    // Check sign bit and convert it into an XOR mask
+    printf("  #8000 AND2k EQU2 #ff MUL DUP\n");
+    // XOR before shifting
+    printf("  DUP2 ROT2 EOR2 ROT2\n");
+    // XOR, shift, XOR again
+    // Convert shift amount to SFT format and do shift
+    printf("  NIP #0f AND SFT2\n");
+    // XOR again
+    printf("  EOR2\n");
+    // Return
+    printf("  JMP2r\n");
   }
 }
 
