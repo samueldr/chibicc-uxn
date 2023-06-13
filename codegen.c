@@ -687,6 +687,8 @@ static void gen(Node *node) {
     if (node->lhs) {
       gen(node->lhs);
       // printf("  pop rax\n");
+    } else {
+      printf("  #0000\n"); // dummy return value
     }
     printf("  !.L.return.%s\n", funcname);
     return;
