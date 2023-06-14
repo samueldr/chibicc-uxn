@@ -11,6 +11,8 @@ static int contseq;
 static char *funcname;
 static bool need_sext_helper;
 static bool need_ashr_helper;
+static bool need_slt_helper;
+static bool need_sle_helper;
 
 static void gen(Node *node);
 
@@ -246,13 +248,15 @@ static void gen_binary(Node *node) {
     // printf("  cmp rax, rdi\n");
     // printf("  setl al\n");
     // printf("  movzb rax, al\n");
-    printf("  LTH2 #00 SWP\n");
+    need_slt_helper = true;
+    printf("  slt\n");
     break;
   case ND_LE:
     // printf("  cmp rax, rdi\n");
     // printf("  setle al\n");
     // printf("  movzb rax, al\n");
-    printf("  GTH2 #00 SWP #01 EOR\n");
+    need_sle_helper = true;
+    printf("  sle\n");
     break;
   }
 
@@ -852,6 +856,19 @@ static void emit_text(Program *prog) {
     printf("  EOR2\n");
     // Return
     printf("  JMP2r\n");
+  }
+  if (need_slt_helper) {
+    // Signed less-than
+    // uxn's LTH is unsigned, so we flip the sign bits to get signed comparison
+    // The masking requires some stack juggling, so we use GTH to save a SWP.
+    printf("@slt\n");
+    printf("  #8000 EOR2 SWP2 #8000 EOR2 GTH2 #00 SWP JMP2r\n");
+  }
+  if (need_sle_helper) {
+    // Signed less-than-or-equal-to
+    // Same deal as with less-than, but using (a <= b) == !(a > b)
+    printf("@sle\n");
+    printf("  #8000 EOR2 SWP2 #8000 EOR2 LTH2 #00 SWP #01 EOR JMP2r\n");
   }
 }
 

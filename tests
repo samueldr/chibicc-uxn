@@ -806,6 +806,29 @@ void main() {
   assert(0x10, ({ int x = 0x10; char y = x; y; }), "int x = 0x10; char y = x; y;");
   assert(0x10, ({ int x = 0x10; char y = x; x; }), "int x = 0x10; char y = x; x;");
 
+  // Signed comparison
+  assert(1, 1 < 2, "1 < 2");
+  assert(1, 1 <= 2, "1 <= 2");
+  assert(0, 1 < -2, "1 < -2");
+  assert(0, 1 <= -2, "1 <= -2");
+  assert(1, -1 < 2, "-1 < 2");
+  assert(1, -1 <= 2, "-1 <= 2");
+  assert(0, -1 < -2, "-1 < -2");
+  assert(0, -1 <= -2, "-1 <= -2");
+  assert(0, 2 < 2, "2 < 2");
+  assert(1, 2 <= 2, "2 <= 2");
+  assert(0, -2 < -2, "-2 < -2");
+  assert(1, -2 <= -2, "-2 <= -2");
+  // ~0x7fff is INT_MIN, 0x7fff is INT_MAX
+  assert(1, ~0x7fff < 0x7fff, "~0x7fff < 0x7fff");
+  assert(1, ~0x7fff <= 0x7fff, "~0x7fff <= 0x7fff");
+  assert(0, 0x7fff < ~0x7fff, "0x7fff < ~0x7fff");
+  assert(0, 0x7fff <= ~0x7fff, "0x7fff <= ~0x7fff");
+  assert(0, 0x7fff < 0x7fff, "0x7fff < 0x7fff");
+  assert(1, 0x7fff <= 0x7fff, "0x7fff <= 0x7fff");
+  assert(0, ~0x7fff < ~0x7fff, "~0x7fff < ~0x7fff");
+  assert(1, ~0x7fff <= ~0x7fff, "~0x7fff <= ~0x7fff");
+
   puts("OK");
   exit(0);
 }
