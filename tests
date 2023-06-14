@@ -181,6 +181,10 @@ int counter() {
 //int add_all3(int z, int b, int c, ...);
 
 void main() {
+  // ********************************
+  // * Tests inherited from chibicc *
+  // ********************************
+
   assert(8, ({ int a=3; int z=5; a+z; }), "int a=3; int z=5; a+z;");
 
   assert(0, 0, "0");
@@ -789,6 +793,59 @@ void main() {
   //assert(8, sizeof(0b0L), "sizeof(0b0L)");
   //assert(4, sizeof(2147483647), "sizeof(2147483647)");
   //assert(8, sizeof(2147483648), "sizeof(2147483648)");
+
+  // *********************
+  // * New tests for uxn *
+  // *********************
+
+  // Sign extension tests
+  assert(-1, (char)0xff, "(char)0xff");
+  assert(0x10, (char)0x10, "(char)0x10");
+  assert(-1, ({ int x = 0xff; char y = x; y; }), "int x = 0xff; char y = x; y;");
+  assert(0xff, ({ int x = 0xff; char y = x; x; }), "int x = 0xff; char y = x; x;");
+  assert(0x10, ({ int x = 0x10; char y = x; y; }), "int x = 0x10; char y = x; y;");
+  assert(0x10, ({ int x = 0x10; char y = x; x; }), "int x = 0x10; char y = x; x;");
+
+  // Signed comparison
+  assert(1, 1 < 2, "1 < 2");
+  assert(1, 1 <= 2, "1 <= 2");
+  assert(0, 1 < -2, "1 < -2");
+  assert(0, 1 <= -2, "1 <= -2");
+  assert(1, -1 < 2, "-1 < 2");
+  assert(1, -1 <= 2, "-1 <= 2");
+  assert(0, -1 < -2, "-1 < -2");
+  assert(0, -1 <= -2, "-1 <= -2");
+  assert(0, 2 < 2, "2 < 2");
+  assert(1, 2 <= 2, "2 <= 2");
+  assert(0, -2 < -2, "-2 < -2");
+  assert(1, -2 <= -2, "-2 <= -2");
+  // ~0x7fff is INT_MIN, 0x7fff is INT_MAX
+  assert(1, ~0x7fff < 0x7fff, "~0x7fff < 0x7fff");
+  assert(1, ~0x7fff <= 0x7fff, "~0x7fff <= 0x7fff");
+  assert(0, 0x7fff < ~0x7fff, "0x7fff < ~0x7fff");
+  assert(0, 0x7fff <= ~0x7fff, "0x7fff <= ~0x7fff");
+  assert(0, 0x7fff < 0x7fff, "0x7fff < 0x7fff");
+  assert(1, 0x7fff <= 0x7fff, "0x7fff <= 0x7fff");
+  assert(0, ~0x7fff < ~0x7fff, "~0x7fff < ~0x7fff");
+  assert(1, ~0x7fff <= ~0x7fff, "~0x7fff <= ~0x7fff");
+
+  // Signed division
+  assert(1, 3 / 2, "3 / 2");
+  assert(-1, -3 / 2, "-3 / 2");
+  assert(-1, 3 / -2, "3 / -2");
+  assert(1, -3 / -2, "-3 / -2");
+  assert(1, 3 % 2, "3 % 2");
+  assert(-1, -3 % 2, "-3 % 2");
+  assert(1, 3 % -2, "3 % -2");
+  assert(-1, -3 % -2, "-3 % -2");
+  assert(0, 3 / 5, "3 / 5");
+  assert(0, -3 / 5, "-3 / 5");
+  assert(0, 3 / -5, "3 / -5");
+  assert(0, -3 / -5, "-3 / -5");
+  assert(3, 3 % 5, "3 % 5");
+  assert(-3, -3 % 5, "-3 % 5");
+  assert(3, 3 % -5, "3 % -5");
+  assert(-3, -3 % -5, "-3 % -5");
 
   puts("OK");
   exit(0);

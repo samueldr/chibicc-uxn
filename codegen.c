@@ -9,6 +9,11 @@ static int labelseq = 1;
 static int brkseq;
 static int contseq;
 static char *funcname;
+static bool need_sext_helper;
+static bool need_ashr_helper;
+static bool need_slt_helper;
+static bool need_sle_helper;
+static bool need_sdiv_helper;
 
 static void gen(Node *node);
 
@@ -68,7 +73,8 @@ static void load(Type *ty) {
 
   // printf("  push rax\n");
   if (ty->size == 1) {
-    printf("  LDA #00 SWP\n");
+    need_sext_helper = 1;
+    printf("  LDA sext\n");
   } else {
     printf("  LDA2\n");
   }
@@ -124,7 +130,8 @@ static void truncate(Type *ty) {
   if (ty->kind == TY_BOOL) {
     printf("  #0000 NEQ2 #00 SWP\n");
   } else if (ty->size == 1) {
-    printf("  NIP #00 SWP\n");
+    need_sext_helper = 1;
+    printf("  NIP sext\n");
   }
 }
 
@@ -190,13 +197,15 @@ static void gen_binary(Node *node) {
   case ND_DIV_EQ:
     // printf("  cqo\n");
     // printf("  idiv rdi\n");
-    printf("  DIV2\n");
+    need_sdiv_helper = true;
+    printf("  sdiv\n");
     break;
   case ND_MOD:
   case ND_MOD_EQ:
     // printf("  cqo\n");
     // printf("  idiv rdi\n");
-    printf("  DIV2k MUL2 SUB2\n");
+    need_sdiv_helper = true;
+    printf("  OVR2 OVR2 sdiv MUL2 SUB2\n");
     break;
   case ND_BITAND:
   case ND_BITAND_EQ:
@@ -223,7 +232,8 @@ static void gen_binary(Node *node) {
   case ND_SHR_EQ:
     // printf("  mov cl, dil\n");
     // printf("  sar rax, cl\n");
-    printf("  NIP #0f AND SFT2\n");
+    need_ashr_helper = 1;
+    printf("  ashr\n");
     break;
   case ND_EQ:
     // printf("  cmp rax, rdi\n");
@@ -241,13 +251,15 @@ static void gen_binary(Node *node) {
     // printf("  cmp rax, rdi\n");
     // printf("  setl al\n");
     // printf("  movzb rax, al\n");
-    printf("  LTH2 #00 SWP\n");
+    need_slt_helper = true;
+    printf("  slt\n");
     break;
   case ND_LE:
     // printf("  cmp rax, rdi\n");
     // printf("  setle al\n");
     // printf("  movzb rax, al\n");
-    printf("  GTH2 #00 SWP #01 EOR\n");
+    need_sle_helper = true;
+    printf("  sle\n");
     break;
   }
 
@@ -820,6 +832,64 @@ static void emit_text(Program *prog) {
       printf("  .rbp LDZ2 #%04x ADD2 .rbp STZ2\n", fn->stack_size);
 
     printf("  JMP2r\n");
+  }
+
+  if (need_sext_helper) {
+    // 8-bit to 16-bit sign extension
+    printf("@sext\n");
+    printf("  #80 ANDk EQU #ff MUL SWP JMP2r\n");
+  }
+  if (need_ashr_helper) {
+    // 16-bit arithmetic right shift (uxn's SFT does logical right shift)
+    // If the sign bit was unset, this is ((uint16_t)a >> b)
+    // If the sign bit was set, this is ~((uint16_t)(~a) >> b)
+    // The double NOT has the effect of making the zeroes shifted in become ones
+    // to match the sign bit
+    printf("@ashr\n");
+    // Swap value to be shifted with shift amount
+    printf("  SWP2\n");
+    // Check sign bit and convert it into an XOR mask
+    printf("  #8000 AND2k EQU2 #ff MUL DUP\n");
+    // XOR before shifting
+    printf("  DUP2 ROT2 EOR2 ROT2\n");
+    // XOR, shift, XOR again
+    // Convert shift amount to SFT format and do shift
+    printf("  NIP #0f AND SFT2\n");
+    // XOR again
+    printf("  EOR2\n");
+    // Return
+    printf("  JMP2r\n");
+  }
+  if (need_slt_helper) {
+    // Signed less-than
+    // uxn's LTH is unsigned, so we flip the sign bits to get signed comparison
+    // The masking requires some stack juggling, so we use GTH to save a SWP.
+    printf("@slt\n");
+    printf("  #8000 EOR2 SWP2 #8000 EOR2 GTH2 #00 SWP JMP2r\n");
+  }
+  if (need_sle_helper) {
+    // Signed less-than-or-equal-to
+    // Same deal as with less-than, but using (a <= b) == !(a > b)
+    printf("@sle\n");
+    printf("  #8000 EOR2 SWP2 #8000 EOR2 LTH2 #00 SWP #01 EOR JMP2r\n");
+  }
+  if (need_sdiv_helper) {
+    // Signed division (uxn's DIV is unsigned)
+    printf("@sdiv\n");
+    // Get the sign bits of the two inputs and combine them into a single byte
+    printf("  OVR2 #4f SFT2 OVR2 #0f SFT2 ORA2 NIP\n");
+    // Branch accordingly
+    printf("  DUP #00 EQU ?&pospos\n"); // most common case first
+    printf("  DUP #01 EQU ?&posneg\n");
+    printf("  #10 EQU ?&negpos\n");
+    // (-a / -b)
+    printf("  #0000 ROT2 SUB2 SWP2 #0000 SWP2 SUB2 DIV2 JMP2r\n");
+    // (a / b)
+    printf("  &pospos POP DIV2 JMP2r\n");
+    // -(a / -b)
+    printf("  &posneg POP #0000 SWP2 SUB2 DIV2 #0000 SWP2 SUB2 JMP2r\n");
+    // -(-a / b)
+    printf("  &negpos SWP2 #0000 SWP2 SUB2 SWP2 DIV2 #0000 SWP2 SUB2 JMP2r\n");
   }
 }
 
