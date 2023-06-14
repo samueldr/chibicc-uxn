@@ -538,7 +538,7 @@ static void gen(Node *node) {
     // printf("  cmp rax, 0\n");
     // printf("  jne .L.begin.%d\n", seq);
     // printf(".L.break.%d:\n", seq);
-    printf("  #0000 EQU2 ?.L.begin.%d\n", seq);
+    printf("  #0000 NEQ2 ?.L.begin.%d\n", seq);
     printf("@.L.break.%d\n", seq);
 
     brkseq = brk;
