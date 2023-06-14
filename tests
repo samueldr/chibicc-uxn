@@ -181,6 +181,10 @@ int counter() {
 //int add_all3(int z, int b, int c, ...);
 
 void main() {
+  // ********************************
+  // * Tests inherited from chibicc *
+  // ********************************
+
   assert(8, ({ int a=3; int z=5; a+z; }), "int a=3; int z=5; a+z;");
 
   assert(0, 0, "0");
@@ -789,6 +793,18 @@ void main() {
   //assert(8, sizeof(0b0L), "sizeof(0b0L)");
   //assert(4, sizeof(2147483647), "sizeof(2147483647)");
   //assert(8, sizeof(2147483648), "sizeof(2147483648)");
+
+  // *********************
+  // * New tests for uxn *
+  // *********************
+
+  // Sign extension tests
+  assert(-1, (char)0xff, "(char)0xff");
+  assert(0x10, (char)0x10, "(char)0x10");
+  assert(-1, ({ int x = 0xff; char y = x; y; }), "int x = 0xff; char y = x; y;");
+  assert(0xff, ({ int x = 0xff; char y = x; x; }), "int x = 0xff; char y = x; x;");
+  assert(0x10, ({ int x = 0x10; char y = x; y; }), "int x = 0x10; char y = x; y;");
+  assert(0x10, ({ int x = 0x10; char y = x; x; }), "int x = 0x10; char y = x; x;");
 
   puts("OK");
   exit(0);
