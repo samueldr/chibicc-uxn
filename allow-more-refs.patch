@@ -1,0 +1,34 @@
+From 66154f15c179860d1141f9bcaf27403893bd6f31 Mon Sep 17 00:00:00 2001
+From: hikari_no_yume <hikari@noyu.me>
+Date: Wed, 14 Jun 2023 16:52:22 +0200
+Subject: [PATCH] patch
+
+---
+ src/uxnasm.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/uxnasm.c b/src/uxnasm.c
+index b42ba78..07f6e7f 100644
+--- a/src/uxnasm.c
++++ b/src/uxnasm.c
+@@ -39,7 +39,7 @@ typedef struct {
+ 	Uint16 llen, mlen, rlen;
+ 	Label labels[0x400];
+ 	Macro macros[0x100];
+-	Reference refs[0x800];
++	Reference refs[0x8000];
+ 	char scope[0x40];
+ } Program;
+ 
+@@ -179,7 +179,7 @@ makereference(char *scope, char *label, char rune, Uint16 addr)
+ {
+ 	char subw[0x40], parent[0x40];
+ 	Reference *r;
+-	if(p.rlen >= 0x800)
++	if(p.rlen >= 0x8000)
+ 		return error("References limit exceeded", label);
+ 	r = &p.refs[p.rlen++];
+ 	if(label[0] == '&') {
+-- 
+2.37.1 (Apple Git-137.1)
+
