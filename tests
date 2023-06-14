@@ -829,6 +829,24 @@ void main() {
   assert(0, ~0x7fff < ~0x7fff, "~0x7fff < ~0x7fff");
   assert(1, ~0x7fff <= ~0x7fff, "~0x7fff <= ~0x7fff");
 
+  // Signed division
+  assert(1, 3 / 2, "3 / 2");
+  assert(-1, -3 / 2, "-3 / 2");
+  assert(-1, 3 / -2, "3 / -2");
+  assert(1, -3 / -2, "-3 / -2");
+  assert(1, 3 % 2, "3 % 2");
+  assert(-1, -3 % 2, "-3 % 2");
+  assert(1, 3 % -2, "3 % -2");
+  assert(-1, -3 % -2, "-3 % -2");
+  assert(0, 3 / 5, "3 / 5");
+  assert(0, -3 / 5, "-3 / 5");
+  assert(0, 3 / -5, "3 / -5");
+  assert(0, -3 / -5, "-3 / -5");
+  assert(3, 3 % 5, "3 % 5");
+  assert(-3, -3 % 5, "-3 % 5");
+  assert(3, 3 % -5, "3 % -5");
+  assert(-3, -3 % -5, "-3 % -5");
+
   puts("OK");
   exit(0);
 }

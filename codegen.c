@@ -13,6 +13,7 @@ static bool need_sext_helper;
 static bool need_ashr_helper;
 static bool need_slt_helper;
 static bool need_sle_helper;
+static bool need_sdiv_helper;
 
 static void gen(Node *node);
 
@@ -196,13 +197,15 @@ static void gen_binary(Node *node) {
   case ND_DIV_EQ:
     // printf("  cqo\n");
     // printf("  idiv rdi\n");
-    printf("  DIV2\n");
+    need_sdiv_helper = true;
+    printf("  sdiv\n");
     break;
   case ND_MOD:
   case ND_MOD_EQ:
     // printf("  cqo\n");
     // printf("  idiv rdi\n");
-    printf("  DIV2k MUL2 SUB2\n");
+    need_sdiv_helper = true;
+    printf("  OVR2 OVR2 sdiv MUL2 SUB2\n");
     break;
   case ND_BITAND:
   case ND_BITAND_EQ:
@@ -869,6 +872,24 @@ static void emit_text(Program *prog) {
     // Same deal as with less-than, but using (a <= b) == !(a > b)
     printf("@sle\n");
     printf("  #8000 EOR2 SWP2 #8000 EOR2 LTH2 #00 SWP #01 EOR JMP2r\n");
+  }
+  if (need_sdiv_helper) {
+    // Signed division (uxn's DIV is unsigned)
+    printf("@sdiv\n");
+    // Get the sign bits of the two inputs and combine them into a single byte
+    printf("  OVR2 #4f SFT2 OVR2 #0f SFT2 ORA2 NIP\n");
+    // Branch accordingly
+    printf("  DUP #00 EQU ?&pospos\n"); // most common case first
+    printf("  DUP #01 EQU ?&posneg\n");
+    printf("  #10 EQU ?&negpos\n");
+    // (-a / -b)
+    printf("  #0000 ROT2 SUB2 SWP2 #0000 SWP2 SUB2 DIV2 JMP2r\n");
+    // (a / b)
+    printf("  &pospos POP DIV2 JMP2r\n");
+    // -(a / -b)
+    printf("  &posneg POP #0000 SWP2 SUB2 DIV2 #0000 SWP2 SUB2 JMP2r\n");
+    // -(-a / b)
+    printf("  &negpos SWP2 #0000 SWP2 SUB2 SWP2 DIV2 #0000 SWP2 SUB2 JMP2r\n");
   }
 }
 
