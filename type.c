@@ -1,8 +1,8 @@
 #include "chibi.h"
 
-Type *void_type  = &(Type){ TY_VOID, 1, 2 };
-Type *bool_type  = &(Type){ TY_BOOL, 1, 2 };
-Type *char_type  = &(Type){ TY_CHAR, 1, 2 };
+Type *void_type  = &(Type){ TY_VOID, 1, 1 };
+Type *bool_type  = &(Type){ TY_BOOL, 1, 1 };
+Type *char_type  = &(Type){ TY_CHAR, 1, 1 };
 Type *short_type = &(Type){ TY_SHORT, 2, 2 };
 Type *int_type   = &(Type){ TY_INT, 2, 2 };
 //Type *long_type  = &(Type){ TY_LONG, 4, 4 };
