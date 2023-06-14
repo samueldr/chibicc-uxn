@@ -30,7 +30,9 @@ index b42ba78..07f6e7f 100644
 
 ## Details
 
-`char` is 8 bits and signed. `short` and `int` are both 16 bits; `long` and `long long` are not supported. There are no floats. Arrays, structs, and enums are supported.
+Integers are either 8-bit (`char`) or 16-bit (`short` or `int`); there is no `long` or `long long`. Currently there are only signed integers. Uxn only provides unsigned integer operations, so the following signed operations have to be emulated with helper functions: sign extension (`char` to `int` conversion), comparison, arithmetic right shift and division/modulo. These last two are particularly expensive. TODO: add unsigned types as an alternative.
+
+There are no floats. Arrays, structs, and enums are supported.
 
 Global variable initializers can be pointers to other globals, but only without an offset, so e.g. `int *b = &a;` and `char *foo = "bar";` work, but not `int *b = &a + 1;`. This is because Uxntal can't express an offset to an absolute reference.
 
