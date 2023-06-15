@@ -12,7 +12,6 @@ jobs:
       - name: Get uxn, patch it and build it
         run: |
           git clone https://git.sr.ht/\~rabbits/uxn
-          pushd uxn && git apply ../allow-more-refs.patch && popd
           gcc uxn/src/uxn.c uxn/src/devices/system.c uxn/src/devices/file.c uxn/src/devices/datetime.c uxn/src/uxncli.c -o uxncli
           gcc uxn/src/uxnasm.c -o uxnasm
       - name: Run tests

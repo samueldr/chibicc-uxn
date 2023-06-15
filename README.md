@@ -15,7 +15,7 @@ uxnemu c.rom
 
 For a more complex and visually interesting demo, try `examples/star.c`.
 
-See also `make test`, which runs a test suite. It needs a [patched version of uxnasm](allow-more-refs.patch).
+See also `make test`, which runs a test suite.
 
 ## Details
 
