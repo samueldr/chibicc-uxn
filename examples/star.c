@@ -92,7 +92,7 @@ char SPRITE[8] = {
 
 char t = 0;
 
-void screen(void)
+void on_screen(void)
 {
   t++;
 
@@ -136,15 +136,10 @@ void screen(void)
   set_spr_y(123);
   draw_sprite(0x31);
 }
-void call_screen(void)
-{
-  screen();
-  brk();
-}
 
 void main(void)
 {
   palette(0x0aaf, 0x0ffc, 0x0faa);
   set_screen_size(256, 256);
-  set_screen_vector(&call_screen);
+  set_screen_vector(&on_screen);
 }

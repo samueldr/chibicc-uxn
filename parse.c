@@ -667,6 +667,7 @@ static Function *function(void) {
   Function *fn = calloc(1, sizeof(Function));
   fn->name = name;
   fn->is_static = (sclass == STATIC);
+  fn->is_uxn_vector = !strncmp(name, "on_", 3);
   expect("(");
 
   Scope *sc = enter_scope();

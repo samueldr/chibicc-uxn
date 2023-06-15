@@ -796,6 +796,11 @@ void main() {
   // * New tests for uxn *
   // *********************
 
+  // Storing to base types
+  assert(256, ({ int n = 256; n; }), "int n = 256; n;");
+  assert(0, ({ char n = 256; n; }), "char n = 256; n;");
+  assert(1, ({ _Bool n = 256; n; }), "_Bool n = 256; n;");
+
   // Sign extension tests
   assert(-1, (char)0xff, "(char)0xff");
   assert(0x10, (char)0x10, "(char)0x10");

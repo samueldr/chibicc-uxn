@@ -87,6 +87,18 @@ static void load(Type *ty) {
   }
 }
 
+// Expects "addr oldval newval" on the stack and leaves "oldval".
+static void store_inner(Type *ty) {
+  if (ty->size == 1) {
+    if (ty->kind == TY_BOOL)
+      printf("  #0000 NEQ2 #00 SWP\n");
+    printf("  ROT2 STA POP\n");
+  } else {
+    printf("  ROT2 STA2\n");
+  }
+}
+
+// Expects "addr newval" on the stack and leaves "newval".
 static void store(Type *ty) {
   // printf("  pop rdi\n");
   // printf("  pop rax\n");
@@ -109,13 +121,8 @@ static void store(Type *ty) {
   // }
 
   // printf("  push rdi\n");
-  if (ty->size == 1) {
-    if (ty->kind == TY_BOOL)
-      printf("  #00 NEQ\n");
-    printf("  DUP2 ROT2 STA POP\n");
-  } else {
-    printf("  DUP2 ROT2 STA2\n");
-  }
+  printf("  DUP2\n");
+  store_inner(ty);
 }
 
 static void truncate(Type *ty) {
@@ -347,18 +354,20 @@ static void gen(Node *node) {
     // printf("  push [rsp]\n");
     printf("  DUP2\n");
     load(node->ty);
+    printf("  DUP2\n");
     inc(node->ty);
-    store(node->ty);
-    dec(node->ty);
+    store_inner(node->ty);
+    // dec(node->ty);
     return;
   case ND_POST_DEC:
     gen_lval(node->lhs);
     // printf("  push [rsp]\n");
     printf("  DUP2\n");
     load(node->ty);
+    printf("  DUP2\n");
     dec(node->ty);
-    store(node->ty);
-    inc(node->ty);
+    store_inner(node->ty);
+    // inc(node->ty);
     return;
   case ND_ADD_EQ:
   case ND_PTR_ADD_EQ:
@@ -387,7 +396,6 @@ static void gen(Node *node) {
     gen_addr(node->lhs);
     return;
   case ND_DEREF:
-    printf("  ( * )\n");
     gen(node->lhs);
     if (node->ty->kind != TY_ARRAY)
       load(node->ty);
@@ -625,10 +633,6 @@ static void gen(Node *node) {
     gen(node->lhs);
     return;
   case ND_FUNCALL: {
-    if (!strcmp(node->funcname, "brk")) {
-      printf("  BRK\n");
-      return;
-    }
     if (!strcmp(node->funcname, "deo")) {
       gen(node->args);
       printf("  NIP\n");
@@ -666,13 +670,6 @@ static void gen(Node *node) {
     // Function arguments are passed via the uxn working stack.
     if (node->args)
       args_backwards(node->args);
-
-    // int nargs = 0;
-    // for (Node *arg = node->args; arg; arg = arg->next) {
-    //   gen(arg);
-    //   printf("  #00 LDZ2 #0002 SUB2 DUP2 #00 STZ2 STA2\n");
-    //   nargs++;
-    // }
 
     // for (int i = nargs - 1; i >= 0; i--)
     //   printf("  pop %s\n", argreg8[i]);
@@ -835,9 +832,11 @@ static void emit_text(Program *prog) {
     // printf("  sub rsp, %d\n", fn->stack_size);
 
     // Copy the frame pointer from the "frame" below.
-    printf("  OVR2r\n");
-    if (fn->stack_size != 0) {
-      printf("  LIT2r %04x SUB2r\n", fn->stack_size);
+    if (!fn->is_uxn_vector) {
+      printf("  OVR2r\n");
+      if (fn->stack_size != 0) {
+        printf("  LIT2r %04x SUB2r\n", fn->stack_size);
+      }
     }
 
     // Save arg registers if function is variadic
@@ -866,14 +865,20 @@ static void emit_text(Program *prog) {
       gen(node);
 
     // Epilogue
-    printf("  #0000\n"); // dummy return value
+    if (!fn->is_uxn_vector) {
+      printf("  #0000\n"); // dummy return value
+    }
     printf("@L.return.%s\n", funcname);
     // printf("  mov rsp, rbp\n");
     // printf("  pop rbp\n");
     // printf("  ret\n");
 
-    // Pop the frame pointer, then return.
-    printf("  POP2r JMP2r\n");
+    if (fn->is_uxn_vector) {
+      printf("  BRK\n");
+    } else {
+      // Pop the frame pointer, then return.
+      printf("  POP2r JMP2r\n");
+    }
   }
 
   if (need_sext_helper) {

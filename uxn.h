@@ -3,7 +3,6 @@ void deo(char data, char device);
 void deo2(int data, char device);
 char dei(char device);
 int dei2(char device);
-void brk();
 
 typedef struct {
     char operation; // 1 = copy
