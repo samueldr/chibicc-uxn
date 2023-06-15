@@ -17,6 +17,16 @@ static bool need_sdiv_helper;
 
 static void gen(Node *node);
 
+static void emit_add(int n) {
+  switch (n) {
+    case 0: return;
+    case 1: printf("  INC2\n"); return;
+    case 2: printf("  INC2 INC2\n"); return;
+    case 3: printf("  INC2 INC2 INC2\n"); return;
+    default: printf("  #%04x ADD2\n", n); return;
+  }
+}
+
 // Pushes the given node's address to the stack.
 static void gen_addr(Node *node) {
   switch (node->kind) {
@@ -26,10 +36,8 @@ static void gen_addr(Node *node) {
 
     Var *var = node->var;
     if (var->is_local) {
-      if (var->offset == 0)
-        printf("  #00 LDZ2\n");
-      else
-        printf("  #%04x #00 LDZ2 ADD2\n", var->offset);
+      printf("  STH2rk\n");
+      emit_add(var->offset);
     } else {
       printf("  ;%s_\n", var->name);
     }
@@ -43,8 +51,7 @@ static void gen_addr(Node *node) {
     // printf("  pop rax\n");
     // printf("  add rax, %d\n", node->member->offset);
     // printf("  push rax\n");
-    if (node->member->offset != 0)
-      printf("  #%04x ADD2\n", node->member->offset);
+    emit_add(node->member->offset);
     return;
   }
 
@@ -140,10 +147,7 @@ static void inc(Type *ty) {
   // printf("  add rax, %d\n", ty->base ? ty->base->size : 1);
   // printf("  push rax\n");
   int n = ty->base ? ty->base->size : 1;
-  if (n == 1)
-    printf("  INC2\n");
-  else
-    printf("  #%04x ADD2\n", n);
+  emit_add(n);
 }
 
 static void dec(Type *ty) {
@@ -433,7 +437,7 @@ static void gen(Node *node) {
     // printf("  pop rax\n");
     // printf("  cmp rax, 0\n");
     // printf("  jne L.true.%d\n", seq);
-    printf("  #0000 NEQ2 ?L.true.%d\n", seq);
+    printf("  ORA ?L.true.%d\n", seq);
     gen(node->rhs);
     // printf("  pop rax\n");
     // printf("  cmp rax, 0\n");
@@ -443,7 +447,7 @@ static void gen(Node *node) {
     // printf("L.true.%d:\n", seq);
     // printf("  push 1\n");
     // printf("L.end.%d:\n", seq);
-    printf("  #0000 NEQ2 ?L.true.%d\n", seq);
+    printf("  ORA ?L.true.%d\n", seq);
     printf("  #0000 !L.end.%d\n", seq);
     printf("@L.true.%d\n", seq);
     printf("  #0001\n");
@@ -761,10 +765,9 @@ static void emit_data(Program *prog) {
 }
 
 static void load_arg(Var *var /*, int idx*/) {
-  if (var->ty->size == 1)
-    printf("  #00 LDZ2 #%04x ADD2 STA POP\n", var->offset);
-  else
-    printf("  #00 LDZ2 #%04x ADD2 STA2\n", var->offset);
+  printf("  STH2rk\n");
+  emit_add(var->offset);
+  printf(var->ty->size == 1 ? "STA POP\n" : "STA2\n");
 
   // int sz = var->ty->size;
   // if (sz == 1) {
@@ -794,8 +797,12 @@ static void emit_text(Program *prog) {
     // printf("  push rbp\n");
     // printf("  mov rbp, rsp\n");
     // printf("  sub rsp, %d\n", fn->stack_size);
-    if (fn->stack_size != 0)
-      printf("  #00 LDZ2 #%04x SUB2 #00 STZ2\n", fn->stack_size);
+
+    // Copy the frame pointer from the "frame" below.
+    printf("  OVR2r\n");
+    if (fn->stack_size != 0) {
+      printf("  LIT2r %04x SUB2r\n", fn->stack_size);
+    }
 
     // Save arg registers if function is variadic
     if (fn->has_varargs) {
@@ -828,10 +835,9 @@ static void emit_text(Program *prog) {
     // printf("  mov rsp, rbp\n");
     // printf("  pop rbp\n");
     // printf("  ret\n");
-    if (fn->stack_size != 0)
-      printf("  #00 LDZ2 #%04x ADD2 #00 STZ2\n", fn->stack_size);
 
-    printf("  JMP2r\n");
+    // Pop the frame pointer, then return.
+    printf("  POP2r JMP2r\n");
   }
 
   if (need_sext_helper) {
@@ -894,8 +900,8 @@ static void emit_text(Program *prog) {
 }
 
 void codegen(Program *prog) {
-  printf("|0000 @StackPtr $2\n");
-  printf("|0100 main_ BRK\n");
+  printf("|0000\n");
+  printf("|0100 LIT2r 0000 main_ BRK\n");
   emit_data(prog);
   emit_text(prog);
 }
