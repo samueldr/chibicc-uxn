@@ -7,16 +7,15 @@
  */
 
 #include <uxn.h>
-void puts(char *s) {
+void print(char *s) {
   for (; *s; *s++) putchar(*s);
-  putchar('\n');
 }
 void put_hex(int word) {
   char hex[16] = "0123456789abcdef";
-  for (int i = 0; i < 4; i++) {
-    putchar(hex[(word >> ((3 - i) * 4)) & 0xf]);
-  }
-  putchar('\n');
+  putchar(hex[word >> 12 & 0xf]);
+  putchar(hex[word >> 8 & 0xf]);
+  putchar(hex[word >> 4 & 0xf]);
+  putchar(hex[word & 0xf]);
 }
 int strcmp(char *a, char *b) {
   for (;;) {
@@ -97,18 +96,19 @@ typedef struct {char a; int b;} Ty1;
 
 int assert(int /*long*/ expected, int /*long*/ actual, char *code) {
   if (expected == actual) {
-    puts(code);
-    puts("matched expected =>");
+    print(code);
+    print("\e[32m PASS \e[0m");
     put_hex(actual);
+    putchar('\n');
   } else {
-    puts(code);
-    puts("did not match expected =>");
+    print(code);
+    print("\e[31m FAIL \e[0mexpected ");
     put_hex(expected);
-    puts("instead got");
+    print(" but got ");
     put_hex(actual);
+    putchar('\n');
     exit(1);
   }
-  putchar('\n');
 }
 
 int ret3() {
@@ -845,6 +845,6 @@ void main() {
   assert(3, 3 % -5, "3 % -5");
   assert(-3, -3 % -5, "-3 % -5");
 
-  puts("OK");
+  print("All tests passed!\n");
   exit(0);
 }

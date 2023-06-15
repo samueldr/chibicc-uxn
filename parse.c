@@ -163,7 +163,7 @@ static Type *find_typedef(Token *tok) {
 static char *new_label(void) {
   static int cnt = 0;
   char buf[20];
-  sprintf(buf, ".L.data.%d", cnt++);
+  sprintf(buf, "L.data.%d", cnt++);
   return strndup(buf, 20);
 }
 
