@@ -1889,6 +1889,7 @@ static Node *primary(void) {
     Type *ty = array_of(char_type, tok->cont_len);
     Var *var = new_gvar(new_label(), ty, true, true);
     var->initializer = gvar_init_string(tok->contents, tok->cont_len);
+    var->is_string_literal = true;
     return new_var_node(var, tok);
   }
 

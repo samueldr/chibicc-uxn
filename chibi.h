@@ -75,6 +75,7 @@ struct Var {
   // Global variable
   bool is_static;
   Initializer *initializer;
+  bool is_string_literal;
 };
 
 typedef struct VarList VarList;

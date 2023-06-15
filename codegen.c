@@ -719,6 +719,26 @@ static void gen(Node *node) {
   gen_binary(node);
 }
 
+static void emit_string_literal(Initializer *init) {
+  putchar(' ');
+  int n = 0;
+  for (; init; init = init->next) {
+    char c = init->val;
+    if (c >= '!' && c <= '~') {
+      if (n++ == 0)
+        printf(" \"");
+      putchar(c);
+      // Avoid running into uxnasm's token length limit.
+      if (n >= 60)
+        n = 0;
+    } else {
+      printf(" %02x", c);
+      n = 0;
+    }
+  }
+  putchar('\n');
+}
+
 static void emit_data(Program *prog) {
   // for (VarList *vl = prog->globals; vl; vl = vl->next)
   //   if (!vl->var->is_static)
@@ -746,6 +766,11 @@ static void emit_data(Program *prog) {
 
     // printf(".align %d\n", var->ty->align);
     printf("@%s_\n", var->name);
+
+    if (var->is_string_literal) {
+      emit_string_literal(var->initializer);
+      continue;
+    }
 
     int column = 0;
     for (Initializer *init = var->initializer; init; init = init->next) {
