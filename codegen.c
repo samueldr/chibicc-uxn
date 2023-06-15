@@ -665,6 +665,11 @@ static void gen(Node *node) {
       printf("  NIP DEI2\n");
       return;
     }
+    if (!strcmp(node->funcname, "exit")) {
+      gen(node->args);
+      printf("  NIP #80 ORA #0f DEO BRK\n");
+      return;
+    }
     if (!strcmp(node->funcname, "__builtin_va_start")) {
       // printf("  pop rax\n");
       // printf("  mov edi, dword ptr [rbp-8]\n");
@@ -882,6 +887,7 @@ static void emit_text(Program *prog) {
     // printf("  ret\n");
 
     // Pop the frame pointer, then return.
+    truncate(fn->ty);
     printf("  POP2r JMP2r\n");
   }
 

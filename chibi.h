@@ -220,6 +220,7 @@ struct Function {
   Node *node;
   VarList *locals;
   int stack_size;
+  Type *ty;
 };
 
 typedef struct {

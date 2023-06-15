@@ -116,6 +116,19 @@ int ret3() {
   return 5;
 }
 
+char ret_char_minus1(void)
+{
+    return -1;
+}
+char ret_char_0xff(void)
+{
+    return 0xff;
+}
+_Bool ret_bool_256(void)
+{
+    return 256;
+}
+
 int add2(int x, int y) {
   return x + y;
 }
@@ -800,6 +813,11 @@ void main() {
   assert(256, ({ int n = 256; n; }), "int n = 256; n;");
   assert(0, ({ char n = 256; n; }), "char n = 256; n;");
   assert(1, ({ _Bool n = 256; n; }), "_Bool n = 256; n;");
+
+  // Returning base types
+  assert(-1, ({ int n = ret_char_minus1(); n; }), "int n = ret_char_minus1(); n;");
+  assert(-1, ({ int n = ret_char_0xff(); n; }), "int n = ret_char_0xff(); n;");
+  assert(1, ({ int n = ret_bool_256(); n; }), "int n = ret_bool_256(); n;");
 
   // Sign extension tests
   assert(-1, (char)0xff, "(char)0xff");
