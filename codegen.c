@@ -968,10 +968,10 @@ void codegen(Program *prog) {
       }
     }
   }
-  printf("  LIT2r 0000 main_ BRK\n");
+  printf("  LIT2r 0000 main_ POP2r BRK\n");
   for (i = 0; i < sizeof(devices) / sizeof(Device); i++) {
     if (need_device_hook[i]) {
-      printf("  @L.%s.hook LIT2r 0000 on_%s_ BRK\n", devices[i].name,
+      printf("  @L.%s.hook LIT2r 0000 on_%s_ POP2 POP2r BRK\n", devices[i].name,
              devices[i].name);
     }
   }
