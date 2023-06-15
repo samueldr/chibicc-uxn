@@ -27,16 +27,20 @@ Global variable initializers can be pointers to other globals, but only without 
 
 The function names `deo deo2 dei dei2` are "intrinsics" corresponding to the uxn instructions. There is a header `uxn.h` defining their prototypes and some useful wrappers around Varvara APIs.
 
-Varvara handlers *must* have names starting with `on_` — this is how the compiler knows to emit `BRK` instead of `JMP2r` at the end. Conversely, regular function names may not start with `on_`.
+To set up Varvara event handlers, just define any of the following functions:
 
-```c
-#include <uxn.h>
+- `void on_console(void);`
+  - Called when a byte is received. Call `console_read()` or `console_type()` to process it.
+- `void on_screen(void);`
+  - Called 60 times per second to update the screen.
+- `void on_audio1(void);`
+  - Called when audio ends on channel 1.
+- `void on_audio2(void);`
+- `void on_audio3(void);`
+- `void on_audio4(void);`
+- `void on_controller(void);`
+  - Called when a button is pressed or released on the controller or keyboard. Call `controller_button()` or `controller_key()` to process it.
+- `void on_mouse(void);`
+  - Called when the mouse is moved. Call `mouse_x()`, `mouse_y()` and `mouse_state()` to process it.
 
-void on_controller(void) {
-  // Do things with controller_button() etc...
-}
-
-void main(void) {
-  set_controller_vector(&on_controller);
-}
-```
+They will be automatically hooked before your "main" function. You need not (and must not) call `deo2(&on_console, 0x20)`.

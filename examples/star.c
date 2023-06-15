@@ -141,5 +141,4 @@ void main(void)
 {
   palette(0x0aaf, 0x0ffc, 0x0faa);
   set_screen_size(256, 256);
-  set_screen_vector(&on_screen);
 }

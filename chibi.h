@@ -216,7 +216,6 @@ struct Function {
   VarList *params;
   bool is_static;
   bool has_varargs;
-  bool is_uxn_vector;
 
   Node *node;
   VarList *locals;

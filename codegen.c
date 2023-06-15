@@ -19,11 +19,20 @@ static void gen(Node *node);
 
 static void emit_add(int n) {
   switch (n) {
-    case 0: return;
-    case 1: printf("  INC2\n"); return;
-    case 2: printf("  INC2 INC2\n"); return;
-    case 3: printf("  INC2 INC2 INC2\n"); return;
-    default: printf("  #%04x ADD2\n", n); return;
+  case 0:
+    return;
+  case 1:
+    printf("  INC2\n");
+    return;
+  case 2:
+    printf("  INC2 INC2\n");
+    return;
+  case 3:
+    printf("  INC2 INC2 INC2\n");
+    return;
+  default:
+    printf("  #%04x ADD2\n", n);
+    return;
   }
 }
 
@@ -771,11 +780,14 @@ static void emit_data(Program *prog) {
 
     int column = 0;
     for (Initializer *init = var->initializer; init; init = init->next) {
-      if (column == 0) putchar(' ');
+      if (column == 0)
+        putchar(' ');
       if (init->label) {
         if (init->addend) {
           // uxntal sadly has no way to express an offset to an addressing rune
-          error("unsupported initializer for var \"%s\": can't handle non-zero addend (%+ld) with label (\"%s\")", var->name, init->addend, init->label);
+          error("unsupported initializer for var \"%s\": can't handle non-zero "
+                "addend (%+ld) with label (\"%s\")",
+                var->name, init->addend, init->label);
         }
         printf(" =%s_", init->label);
         column += 2;
@@ -832,11 +844,9 @@ static void emit_text(Program *prog) {
     // printf("  sub rsp, %d\n", fn->stack_size);
 
     // Copy the frame pointer from the "frame" below.
-    if (!fn->is_uxn_vector) {
-      printf("  OVR2r\n");
-      if (fn->stack_size != 0) {
-        printf("  LIT2r %04x SUB2r\n", fn->stack_size);
-      }
+    printf("  OVR2r\n");
+    if (fn->stack_size != 0) {
+      printf("  LIT2r %04x SUB2r\n", fn->stack_size);
     }
 
     // Save arg registers if function is variadic
@@ -858,27 +868,21 @@ static void emit_text(Program *prog) {
     // Push arguments to the in-memory stack from the uxn working stack
     int i = 0;
     for (VarList *vl = fn->params; vl; vl = vl->next)
-       load_arg(vl->var /*, i++*/);
+      load_arg(vl->var /*, i++*/);
 
     // Emit code
     for (Node *node = fn->node; node; node = node->next)
       gen(node);
 
     // Epilogue
-    if (!fn->is_uxn_vector) {
-      printf("  #0000\n"); // dummy return value
-    }
+    printf("  #0000\n"); // dummy return value
     printf("@L.return.%s\n", funcname);
     // printf("  mov rsp, rbp\n");
     // printf("  pop rbp\n");
     // printf("  ret\n");
 
-    if (fn->is_uxn_vector) {
-      printf("  BRK\n");
-    } else {
-      // Pop the frame pointer, then return.
-      printf("  POP2r JMP2r\n");
-    }
+    // Pop the frame pointer, then return.
+    printf("  POP2r JMP2r\n");
   }
 
   if (need_sext_helper) {
@@ -940,9 +944,37 @@ static void emit_text(Program *prog) {
   }
 }
 
+typedef struct {
+  char *name;
+  unsigned char port;
+} Device;
+
+static Device devices[] = {
+    {"console", 0x10}, {"screen", 0x20}, {"audio1", 0x30},     {"audio2", 0x40},
+    {"audio3", 0x50},  {"audio4", 0x60}, {"controller", 0x80}, {"mouse", 0x90},
+};
+
 void codegen(Program *prog) {
-  printf("|0000\n");
-  printf("|0100 LIT2r 0000 main_ BRK\n");
+  int i;
+  bool need_device_hook[sizeof(devices) / sizeof(Device)] = {false};
+
+  printf("|0100\n");
+  for (Function *fn = prog->fns; fn; fn = fn->next) {
+    for (i = 0; i < sizeof(devices) / sizeof(Device); i++) {
+      if (*devices[i].name && !strncmp(fn->name, "on_", 3) &&
+          !strcmp(fn->name + 3, devices[i].name)) {
+        printf("  ;L.%s.hook #%02x DEO2\n", devices[i].name, devices[i].port);
+        need_device_hook[i] = true;
+      }
+    }
+  }
+  printf("  LIT2r 0000 main_ BRK\n");
+  for (i = 0; i < sizeof(devices) / sizeof(Device); i++) {
+    if (need_device_hook[i]) {
+      printf("  @L.%s.hook LIT2r 0000 on_%s_ BRK\n", devices[i].name,
+             devices[i].name);
+    }
+  }
   emit_data(prog);
   emit_text(prog);
 }

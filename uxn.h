@@ -20,7 +20,6 @@ typedef struct {
 #define debug() deo(0x01, 0x0e)
 #define exit(status) deo(status | 0x80, 0x0f)
 
-#define set_console_vector(func) deo2(func, 0x10)
 #define console_read() dei(0x12)
 #define console_type() dei(0x17)
 #define console_write(c) deo(c, 0x18)
@@ -28,7 +27,6 @@ typedef struct {
 #define getchar console_read
 #define putchar console_write
 
-#define set_screen_vector(func) deo2(func, 0x20)
 #define set_screen_size(width, height) (deo2(width, 0x22), deo2(height, 0x24))
 #define set_screen_auto(a) deo(a, 0x26)
 #define set_screen_x(x) deo2(x, 0x28)
@@ -39,7 +37,6 @@ typedef struct {
 #define draw_pixel(a) deo(a, 0x2e)
 #define draw_sprite(a) deo(a, 0x2f)
 
-#define set_audio_vector(ch, func) deo2(func, 0x30 + 0x10*ch)
 #define audio_position(ch, a) dei2(0x32 + 0x10*ch)
 #define audio_output(ch) dei(a, 0x34 + 0x10*ch)
 #define set_audio_adsr(ch, adsr) deo2(adsr, 0x38 + 0x10*ch)
@@ -48,11 +45,9 @@ typedef struct {
 #define set_audio_volume(ch, volume) deo(volume, 0x3e + 0x10*ch)
 #define play_audio(ch, pitch) deo(pitch, 0x3f + 0x10*ch)
 
-#define set_controller_vector(func) deo2(func, 0x80)
 #define controller_button() dei(0x82)
 #define controller_key() dei(0x83)
 
-#define set_mouse_vector(func) deo2(func, 0x90)
 #define mouse_x() dei2(0x92)
 #define mouse_y() dei2(0x94)
 #define mouse_state() dei(0x96)
