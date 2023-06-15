@@ -18,7 +18,7 @@ typedef struct {
 #define friend(func) deo2(func, 0x04)
 #define palette(r, g, b) (deo2(r, 0x08), deo2(g, 0x0a), deo2(b, 0x0c))
 #define debug() deo(0x01, 0x0e)
-#define exit(status) (deo(status | 0x80, 0x0f), brk())
+#define exit(status) deo(status | 0x80, 0x0f)
 
 #define set_console_vector(func) deo2(func, 0x10)
 #define console_read() dei(0x12)
@@ -30,12 +30,12 @@ typedef struct {
 
 #define set_screen_vector(func) deo2(func, 0x20)
 #define set_screen_size(width, height) (deo2(width, 0x22), deo2(height, 0x24))
-#define set_spr_auto(a) deo(a, 0x26)
-#define set_spr_x(x) deo2(x, 0x28)
-#define set_spr_y(y) deo2(y, 0x2a)
-#define spr_x() dei2(0x28)
-#define spr_y() dei2(0x2a)
-#define set_spr_addr(a) deo2(a, 0x2c)
+#define set_screen_auto(a) deo(a, 0x26)
+#define set_screen_x(x) deo2(x, 0x28)
+#define set_screen_y(y) deo2(y, 0x2a)
+#define screen_x() dei2(0x28)
+#define screen_y() dei2(0x2a)
+#define set_screen_addr(a) deo2(a, 0x2c)
 #define draw_pixel(a) deo(a, 0x2e)
 #define draw_sprite(a) deo(a, 0x2f)
 

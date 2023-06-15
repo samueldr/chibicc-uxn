@@ -1,20 +1,26 @@
 // How to run:
 //
 // $ make
-// $ ./chibicc examples/nqueen.c > tmp.s
-// $ gcc -static -o tmp tmp.s
-// $ ./tmp
+// $ gcc -I. -P -E examples/nqueen.c > tmp.c
+// $ ./chibicc tmp.c > tmp.tal
+// $ uxnasm tmp.tal tmp.rom
+// $ uxncli tmp.rom
+
+#include <uxn.h>
 
 int print_board(int (*board)[10]) {
   for (int i = 0; i < 10; i++) {
-    for (int j = 0; j < 10; j++)
+    for (int j = 0; j < 10; j++) {
       if (board[i][j])
-	printf("Q ");
+        putchar('Q');
       else
-	printf(". ");
-    printf("\n");
+        putchar('.');
+      putchar(' ');
+    }
+    putchar('\n');
   }
-  printf("\n\n");
+  putchar('\n');
+  putchar('\n');
 }
 
 int conflict(int (*board)[10], int row, int col) {
@@ -49,5 +55,6 @@ int main() {
   for (int i = 0; i < 100; i++)
     board[i] = 0;
   solve(board, 0);
+  exit(0);
   return 0;
 }

@@ -26,8 +26,8 @@ void line_low(int x0, int y0, int x1, int y1, char pixel)
   int d = (2 * dy) - dx;
   int y = y0;
   for (int x = x0; x <= x1; x++) {
-    set_spr_x(x);
-    set_spr_y(y);
+    set_screen_x(x);
+    set_screen_y(y);
     draw_pixel(pixel);
     if (d > 0) {
       y += yi;
@@ -49,8 +49,8 @@ void line_high(int x0, int y0, int x1, int y1, char pixel)
   int d = (2 * dx) - dy;
   int x = x0;
   for (int y = y0; y <= y1; y++) {
-    set_spr_x(x);
-    set_spr_y(y);
+    set_screen_x(x);
+    set_screen_y(y);
     draw_pixel(pixel);
     if (d > 0) {
       x += xi;
@@ -97,9 +97,9 @@ void on_screen(void)
   t++;
 
   // clear layer 0
-  set_spr_x(0);
-  set_spr_y(0);
-  draw_pixel(0x80);
+  set_screen_x(0);
+  set_screen_y(0);
+  draw_pixel(BgFillBR);
   // draw star
   _Bool first = 1;
   int last_x;
@@ -119,9 +119,9 @@ void on_screen(void)
     last_y = y;
   }
   // draw u
-  set_spr_addr(SPRITE);
-  set_spr_x(113);
-  set_spr_y(123);
+  set_screen_addr(SPRITE);
+  set_screen_x(113);
+  set_screen_y(123);
   draw_sprite(0x01);
   // draw x
   int x = sin(t + 0x20) >> 5;
@@ -131,9 +131,9 @@ void on_screen(void)
   y = cos(t + 0x60) >> 5;
   line(127 - x - 1, 127 - y - 1, 127 + x, 127 + y, 0x03);
   // draw n
-  set_spr_addr(SPRITE);
-  set_spr_x(133);
-  set_spr_y(123);
+  set_screen_addr(SPRITE);
+  set_screen_x(133);
+  set_screen_y(123);
   draw_sprite(0x31);
 }
 
