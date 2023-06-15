@@ -747,20 +747,31 @@ static void emit_data(Program *prog) {
     // printf(".align %d\n", var->ty->align);
     printf("@%s_\n", var->name);
 
+    int column = 0;
     for (Initializer *init = var->initializer; init; init = init->next) {
+      if (column == 0) putchar(' ');
       if (init->label) {
         if (init->addend) {
           // uxntal sadly has no way to express an offset to an addressing rune
           error("unsupported initializer for var \"%s\": can't handle non-zero addend (%+ld) with label (\"%s\")", var->name, init->addend, init->label);
         }
-        printf("  =%s_\n", init->label);
-      } else if (init->sz == 1)
-        printf("  %02x\n", (unsigned char)init->val);
-      else if (init->sz == 2)
-        printf("  %04x\n", (unsigned short)init->val);
-      else
+        printf(" =%s_", init->label);
+        column += 2;
+      } else if (init->sz == 1) {
+        printf(" %02x", (unsigned char)init->val);
+        column += 1;
+      } else if (init->sz == 2) {
+        printf(" %04x", (unsigned short)init->val);
+        column += 2;
+      } else {
         error("unsupported initializer size");
+      }
+      if (column >= 16) {
+        putchar('\n');
+        column = 0;
+      }
     }
+    putchar('\n');
   }
 }
 
