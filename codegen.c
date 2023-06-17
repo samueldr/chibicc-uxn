@@ -45,7 +45,7 @@ static void gen_addr(Node *node) {
 
     Var *var = node->var;
     if (var->is_local) {
-      printf("  STH2rk\n");
+      printf("  STH2kr\n");
       emit_add(var->offset);
     } else {
       printf("  ;%s_\n", var->name);
@@ -62,9 +62,10 @@ static void gen_addr(Node *node) {
     // printf("  push rax\n");
     emit_add(node->member->offset);
     return;
+  default:
+    error_tok(node->tok, "not an lvalue");
+    return;
   }
-
-  error_tok(node->tok, "not an lvalue");
 }
 
 static void gen_lval(Node *node) {
@@ -281,6 +282,8 @@ static void gen_binary(Node *node) {
     need_sle_helper = true;
     printf("  sle\n");
     break;
+  default:
+    error_tok(node->tok, "not a binary operation");
   }
 
   // printf("  push rax\n");
@@ -723,11 +726,11 @@ static void gen(Node *node) {
     gen(node->lhs);
     truncate(node->ty);
     return;
+  default: // Binary operations
+    gen(node->lhs);
+    gen(node->rhs);
+    gen_binary(node);
   }
-
-  gen(node->lhs);
-  gen(node->rhs);
-  gen_binary(node);
 }
 
 static void emit_string_literal(Initializer *init) {
@@ -815,7 +818,7 @@ static void emit_data(Program *prog) {
 }
 
 static void load_arg(Var *var /*, int idx*/) {
-  printf("  STH2rk\n");
+  printf("  STH2kr\n");
   emit_add(var->offset);
   printf(var->ty->size == 1 ? "STA POP\n" : "STA2\n");
 
