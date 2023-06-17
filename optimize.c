@@ -18,14 +18,16 @@ void emit(Opcode opcode, int literal, char* label) {
   emit_head = emit_head->next;
 }
 
+char buf[64];
 void op(Opcode o) { emit(o, 0, ""); }
-void jci(char* s) { emit(JCI, 0, s); }
-void jmi(char* s) { emit(JMI, 0, s); }
-void jsi(char* s) { emit(JSI, 0, s); }
+void jci(char* fmt, ...) { va_list va; va_start(va, fmt); vsprintf(buf, fmt, va); va_end(va); emit(JCI, 0, buf); }
+void jmi(char* fmt, ...) { va_list va; va_start(va, fmt); vsprintf(buf, fmt, va); va_end(va); emit(JMI, 0, buf); }
+void jsi(char* fmt, ...) { va_list va; va_start(va, fmt); vsprintf(buf, fmt, va); va_end(va); emit(JSI, 0, buf); }
 void lit(unsigned char n) { emit(LIT, n, ""); }
 void lit2(unsigned short n) { emit(LIT2, n, ""); }
-void at(char* s) { emit(AT, 0, s); }
-void semi(char* s) { emit(SEMI, 0, s); }
+void lit2r(unsigned short n) { emit(LIT2r, n, ""); }
+void at(char* fmt, ...) { va_list va; va_start(va, fmt); vsprintf(buf, fmt, va); va_end(va); emit(AT, 0, buf); }
+void semi(char* fmt, ...) { va_list va; va_start(va, fmt); vsprintf(buf, fmt, va); va_end(va); emit(SEMI, 0, buf); }
 void bar(unsigned short n) { emit(BAR, n, ""); }
 
 #define ConstantFolding(o, x) \
@@ -115,26 +117,4 @@ void output(Instruction* prog) {
     output_one(prog);
     prog = prog->next;
   }
-}
-
-void proof_of_concept(void) {
-  Instruction out = {};
-  emit_head = &out;
-
-  bar(0x0100);
-  at("main");
-  lit2(1);
-  lit2(2);
-  op(ADD2);
-  lit2(3);
-  lit2(4);
-  op(ADD2);
-  op(MUL2);
-  op(DUP2);
-  op(DUP2);
-  jmi("main");
-  op(BRK);
-
-  optimize(&out);
-  output(&out);
 }

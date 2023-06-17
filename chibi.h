@@ -358,6 +358,7 @@ typedef enum {
   EOR2 = EOR | flag_2,
   SFT2 = SFT | flag_2,
 
+  STH2kr = STH | flag_2 | flag_k | flag_r,
   POP2r = POP2 | flag_r,
   JMP2r = 0x6c,
 
@@ -386,13 +387,14 @@ struct Instruction {
 extern Instruction *emit_head;
 void emit(Opcode opcode, int literal, char* label);
 void op(Opcode o);
-void jci(char* s);
-void jmi(char* s);
-void jsi(char* s);
+void jci(char* fmt, ...);
+void jmi(char* fmt, ...);
+void jsi(char* fmt, ...);
 void lit(unsigned char n);
 void lit2(unsigned short n);
-void at(char* s);
-void semi(char* s);
+void lit2r(unsigned short n);
+void at(char* fmt, ...);
+void semi(char* fmt, ...);
 void bar(unsigned short n);
 
 void optimize(Instruction* prog);

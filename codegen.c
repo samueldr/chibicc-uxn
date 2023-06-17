@@ -18,21 +18,9 @@ static bool need_sdiv_helper;
 static void gen(Node *node);
 
 static void emit_add(int n) {
-  switch (n) {
-  case 0:
-    return;
-  case 1:
-    printf("  INC2\n");
-    return;
-  case 2:
-    printf("  INC2 INC2\n");
-    return;
-  case 3:
-    printf("  INC2 INC2 INC2\n");
-    return;
-  default:
-    printf("  #%04x ADD2\n", n);
-    return;
+  if (n != 0) {
+    lit2(n);
+    op(ADD2);
   }
 }
 
@@ -45,10 +33,10 @@ static void gen_addr(Node *node) {
 
     Var *var = node->var;
     if (var->is_local) {
-      printf("  STH2kr\n");
+      op(STH2kr);
       emit_add(var->offset);
     } else {
-      printf("  ;%s_\n", var->name);
+      semi("%s_", var->name);
     }
     return;
   }
@@ -91,20 +79,28 @@ static void load(Type *ty) {
   // printf("  push rax\n");
   if (ty->size == 1) {
     need_sext_helper = 1;
-    printf("  LDA sext\n");
+    op(LDA);
+    jsi("sext");
   } else {
-    printf("  LDA2\n");
+    op(LDA2);
   }
 }
 
 // Expects "addr oldval newval" on the stack and leaves "oldval".
 static void store_inner(Type *ty) {
   if (ty->size == 1) {
-    if (ty->kind == TY_BOOL)
-      printf("  #0000 NEQ2 #00 SWP\n");
-    printf("  ROT2 STA POP\n");
+    if (ty->kind == TY_BOOL) {
+      lit2(0);
+      op(NEQ2);
+      lit(0);
+      op(SWP);
+    }
+    op(ROT2);
+    op(STA);
+    op(POP);
   } else {
-    printf("  ROT2 STA2\n");
+    op(ROT2);
+    op(STA2);
   }
 }
 
@@ -131,7 +127,7 @@ static void store(Type *ty) {
   // }
 
   // printf("  push rdi\n");
-  printf("  DUP2\n");
+  op(DUP2);
   store_inner(ty);
 }
 
@@ -152,10 +148,14 @@ static void truncate(Type *ty) {
   // }
   // printf("  push rax\n");
   if (ty->kind == TY_BOOL) {
-    printf("  #0000 NEQ2 #00 SWP\n");
+    lit2(0);
+    op(NEQ2);
+    lit(0);
+    op(SWP);
   } else if (ty->size == 1) {
     need_sext_helper = 1;
-    printf("  NIP sext\n");
+    op(NIP);
+    jsi("sext");
   }
 }
 
@@ -171,7 +171,8 @@ static void dec(Type *ty) {
   // printf("  pop rax\n");
   // printf("  sub rax, %d\n", ty->base ? ty->base->size : 1);
   // printf("  push rax\n");
-  printf("  #%04x SUB2\n", ty->base ? ty->base->size : 1);
+  lit2(ty->base ? ty->base->size : 1);
+  op(SUB2);
 }
 
 static void gen_binary(Node *node) {
@@ -182,105 +183,121 @@ static void gen_binary(Node *node) {
   case ND_ADD:
   case ND_ADD_EQ:
     // printf("  add rax, rdi\n");
-    printf("  ADD2\n");
+    op(ADD2);
     break;
   case ND_PTR_ADD:
   case ND_PTR_ADD_EQ:
     // printf("  imul rdi, %d\n", node->ty->base->size);
     // printf("  add rax, rdi\n");
-    printf("  #%04x MUL2 ADD2\n", node->ty->base->size);
+    lit2(node->ty->base->size);
+    op(MUL2);
+    op(ADD2);
     break;
   case ND_SUB:
   case ND_SUB_EQ:
     // printf("  sub rax, rdi\n");
-    printf("  SUB2\n");
+    op(SUB2);
     break;
   case ND_PTR_SUB:
   case ND_PTR_SUB_EQ:
     // printf("  imul rdi, %d\n", node->ty->base->size);
     // printf("  sub rax, rdi\n");
-    printf("  #%04x MUL2 SUB2\n", node->ty->base->size);
+    lit2(node->ty->base->size);
+    op(MUL2);
+    op(SUB2);
     break;
   case ND_PTR_DIFF:
     // printf("  sub rax, rdi\n");
     // printf("  cqo\n");
     // printf("  mov rdi, %d\n", node->lhs->ty->base->size);
     // printf("  idiv rdi\n");
-    printf("  SUB2 #%04x DIV2\n", node->lhs->ty->base->size);
-
+    op(SUB2);
+    lit2(node->lhs->ty->base->size);
+    op(DIV2);
     break;
   case ND_MUL:
   case ND_MUL_EQ:
     // printf("  imul rax, rdi\n");
-    printf("  MUL2\n");
+    op(MUL2);
     break;
   case ND_DIV:
   case ND_DIV_EQ:
     // printf("  cqo\n");
     // printf("  idiv rdi\n");
     need_sdiv_helper = true;
-    printf("  sdiv\n");
+    jsi("sdiv");
     break;
   case ND_MOD:
   case ND_MOD_EQ:
     // printf("  cqo\n");
     // printf("  idiv rdi\n");
     need_sdiv_helper = true;
-    printf("  OVR2 OVR2 sdiv MUL2 SUB2\n");
+    op(OVR2);
+    op(OVR2);
+    jsi("sdiv");
+    op(MUL2);
+    op(SUB2);
     break;
   case ND_BITAND:
   case ND_BITAND_EQ:
     // printf("  and rax, rdi\n");
-    printf("  AND2\n");
+    op(AND2);
     break;
   case ND_BITOR:
   case ND_BITOR_EQ:
     // printf("  or rax, rdi\n");
-    printf("  ORA2\n");
+    op(ORA2);
     break;
   case ND_BITXOR:
   case ND_BITXOR_EQ:
     // printf("  xor rax, rdi\n");
-    printf("  EOR2\n");
+    op(EOR2);
     break;
   case ND_SHL:
   case ND_SHL_EQ:
     // printf("  mov cl, dil\n");
     // printf("  shl rax, cl\n");
-    printf("  NIP #40 SFT SFT2\n");
+    op(NIP);
+    lit(0x40);
+    op(SFT);
+    op(SFT2);
     break;
   case ND_SHR:
   case ND_SHR_EQ:
     // printf("  mov cl, dil\n");
     // printf("  sar rax, cl\n");
     need_ashr_helper = 1;
-    printf("  ashr\n");
+    jsi("ashr");
     break;
   case ND_EQ:
     // printf("  cmp rax, rdi\n");
     // printf("  sete al\n");
     // printf("  movzb rax, al\n");
-    printf("  EQU2 #00 SWP\n");
+    op(EQU2);
+    lit(0);
+    op(SWP);
     break;
   case ND_NE:
     // printf("  cmp rax, rdi\n");
     // printf("  setne al\n");
     // printf("  movzb rax, al\n");
-    printf("  NEQ2 #00 SWP\n");
+    op(NEQ2);
+    lit(0);
+    op(SWP);
     break;
   case ND_LT:
     // printf("  cmp rax, rdi\n");
     // printf("  setl al\n");
     // printf("  movzb rax, al\n");
     need_slt_helper = true;
-    printf("  slt\n");
+    jsi("slt");
     break;
   case ND_LE:
     // printf("  cmp rax, rdi\n");
     // printf("  setle al\n");
     // printf("  movzb rax, al\n");
     need_sle_helper = true;
-    printf("  sle\n");
+    jsi("sle");
     break;
   default:
     error_tok(node->tok, "not a binary operation");
@@ -308,12 +325,12 @@ static void gen(Node *node) {
     //   printf("  movabs rax, %ld\n", node->val);
     //   printf("  push rax\n");
     // }
-    printf("  #%04x\n", (unsigned short)node->val);
+    lit2(node->val);
     return;
   case ND_EXPR_STMT:
     gen(node->lhs);
     // printf("  add rsp, 8\n");
-    printf("  POP2\n");
+    op(POP2);
     return;
   case ND_VAR:
     if (node->init)
@@ -337,18 +354,20 @@ static void gen(Node *node) {
     gen(node->cond);
     // printf("  pop rax\n");
     // printf("  cmp rax, 0\n");
-    printf("  #0000 EQU2 ?L.else.%d\n", seq);
+    lit2(0);
+    op(EQU2);
+    jci("L.else.%d", seq);
     gen(node->then);
-    printf("  !L.end.%d\n", seq);
-    printf("@L.else.%d\n", seq);
+    jmi("L.end.%d", seq);
+    at("L.else.%d", seq);
     gen(node->els);
-    printf("@L.end.%d\n", seq);
+    at("L.end.%d", seq);
     return;
   }
   case ND_PRE_INC:
     gen_lval(node->lhs);
     // printf("  push [rsp]\n");
-    printf("  DUP2\n");
+    op(DUP2);
     load(node->ty);
     inc(node->ty);
     store(node->ty);
@@ -356,7 +375,7 @@ static void gen(Node *node) {
   case ND_PRE_DEC:
     gen_lval(node->lhs);
     // printf("  push [rsp]\n");
-    printf("  DUP2\n");
+    op(DUP2);
     load(node->ty);
     dec(node->ty);
     store(node->ty);
@@ -364,9 +383,9 @@ static void gen(Node *node) {
   case ND_POST_INC:
     gen_lval(node->lhs);
     // printf("  push [rsp]\n");
-    printf("  DUP2\n");
+    op(DUP2);
     load(node->ty);
-    printf("  DUP2\n");
+    op(DUP2);
     inc(node->ty);
     store_inner(node->ty);
     // dec(node->ty);
@@ -374,9 +393,9 @@ static void gen(Node *node) {
   case ND_POST_DEC:
     gen_lval(node->lhs);
     // printf("  push [rsp]\n");
-    printf("  DUP2\n");
+    op(DUP2);
     load(node->ty);
-    printf("  DUP2\n");
+    op(DUP2);
     dec(node->ty);
     store_inner(node->ty);
     // inc(node->ty);
@@ -394,7 +413,7 @@ static void gen(Node *node) {
   case ND_BITXOR_EQ:
     gen_lval(node->lhs);
     // printf("  push [rsp]\n");
-    printf("  DUP2\n");
+    op(DUP2);
     load(node->lhs->ty);
     gen(node->rhs);
     gen_binary(node);
@@ -419,14 +438,18 @@ static void gen(Node *node) {
     // printf("  sete al\n");
     // printf("  movzb rax, al\n");
     // printf("  push rax\n");
-    printf("  #0000 EQU2 #00 SWP\n");
+    lit2(0);
+    op(EQU2);
+    lit(0);
+    op(SWP);
     return;
   case ND_BITNOT:
     gen(node->lhs);
     // printf("  pop rax\n");
     // printf("  not rax\n");
     // printf("  push rax\n");
-    printf("  #ffff EOR2\n");
+    lit2(0xffff);
+    op(EOR2);
     return;
   case ND_LOGAND: {
     int seq = labelseq++;
@@ -434,7 +457,9 @@ static void gen(Node *node) {
     // printf("  pop rax\n");
     // printf("  cmp rax, 0\n");
     // printf("  je  L.false.%d\n", seq);
-    printf("  #0000 EQU2 ?L.false.%d\n", seq);
+    lit2(0);
+    op(EQU2);
+    jci("L.false.%d", seq);
     gen(node->rhs);
     // printf("  pop rax\n");
     // printf("  cmp rax, 0\n");
@@ -444,11 +469,14 @@ static void gen(Node *node) {
     // printf("L.false.%d:\n", seq);
     // printf("  push 0\n");
     // printf("L.end.%d:\n", seq);
-    printf("  #0000 EQU2 ?L.false.%d\n", seq);
-    printf("  #0001 !L.end.%d\n", seq);
-    printf("@L.false.%d\n", seq);
-    printf("  #0000\n");
-    printf("@L.end.%d\n", seq);
+    lit2(0);
+    op(EQU2);
+    jci("L.false.%d", seq);
+    lit2(1);
+    jmi("L.end.%d", seq);
+    at("L.false.%d", seq);
+    lit2(0);
+    at("L.end.%d", seq);
     return;
   }
   case ND_LOGOR: {
@@ -457,7 +485,8 @@ static void gen(Node *node) {
     // printf("  pop rax\n");
     // printf("  cmp rax, 0\n");
     // printf("  jne L.true.%d\n", seq);
-    printf("  ORA ?L.true.%d\n", seq);
+    op(ORA);
+    jci("L.true.%d", seq);
     gen(node->rhs);
     // printf("  pop rax\n");
     // printf("  cmp rax, 0\n");
@@ -467,11 +496,13 @@ static void gen(Node *node) {
     // printf("L.true.%d:\n", seq);
     // printf("  push 1\n");
     // printf("L.end.%d:\n", seq);
-    printf("  ORA ?L.true.%d\n", seq);
-    printf("  #0000 !L.end.%d\n", seq);
-    printf("@L.true.%d\n", seq);
-    printf("  #0001\n");
-    printf("@L.end.%d\n", seq);
+    op(ORA);
+    jci("L.true.%d", seq);
+    lit2(0);
+    jmi("L.end.%d", seq);
+    at("L.true.%d", seq);
+    lit2(1);
+    at("L.end.%d", seq);
     return;
   }
   case ND_IF: {
@@ -481,24 +512,28 @@ static void gen(Node *node) {
       // printf("  pop rax\n");
       // printf("  cmp rax, 0\n");
       // printf("  je  L.else.%d\n", seq);
-      printf("  #0000 EQU2 ?L.else.%d\n", seq);
+      lit2(0);
+      op(EQU2);
+      jci("L.else.%d", seq);
       gen(node->then);
       // printf("  jmp L.end.%d\n", seq);
       // printf("L.else.%d:\n", seq);
-      printf("  !L.end.%d\n", seq);
-      printf("@L.else.%d\n", seq);
+      jmi("L.end.%d", seq);
+      at("L.else.%d", seq);
       gen(node->els);
       // printf("L.end.%d:\n", seq);
-      printf("@L.end.%d\n", seq);
+      at("L.end.%d", seq);
     } else {
       gen(node->cond);
       // printf("  pop rax\n");
       // printf("  cmp rax, 0\n");
       // printf("  je  L.end.%d\n", seq);
-      printf("  #0000 EQU2 ?L.end.%d\n", seq);
+      lit2(0);
+      op(EQU2);
+      jci("L.end.%d", seq);
       gen(node->then);
       // printf("L.end.%d:\n", seq);
-      printf("@L.end.%d\n", seq);
+      at("L.end.%d", seq);
     }
     return;
   }
@@ -509,19 +544,21 @@ static void gen(Node *node) {
     brkseq = contseq = seq;
 
     // printf("L.continue.%d:\n", seq);
-    printf("@L.continue.%d\n", seq);
+    at("L.continue.%d", seq);
 
     gen(node->cond);
     // printf("  pop rax\n");
     // printf("  cmp rax, 0\n");
     // printf("  je  L.break.%d\n", seq);
-    printf("  #0000 EQU2 ?L.break.%d\n", seq);
+    lit2(0);
+    op(EQU2);
+    jci("L.break.%d", seq);
 
     gen(node->then);
     // printf("  jmp L.continue.%d\n", seq);
     // printf("L.break.%d:\n", seq);
-    printf("  !L.continue.%d\n", seq);
-    printf("@L.break.%d\n", seq);
+    jmi("L.continue.%d", seq);
+    at("L.break.%d", seq);
 
     brkseq = brk;
     contseq = cont;
@@ -536,23 +573,25 @@ static void gen(Node *node) {
     if (node->init)
       gen(node->init);
     // printf("L.begin.%d:\n", seq);
-    printf("@L.begin.%d\n", seq);
+    at("L.begin.%d", seq);
     if (node->cond) {
       gen(node->cond);
       // printf("  pop rax\n");
       // printf("  cmp rax, 0\n");
       // printf("  je  L.break.%d\n", seq);
-      printf("  #0000 EQU2 ?L.break.%d\n", seq);
+      lit2(0);
+      op(EQU2);
+      jci("L.break.%d", seq);
     }
     gen(node->then);
     // printf("L.continue.%d:\n", seq);
-    printf("@L.continue.%d\n", seq);
+    at("L.continue.%d", seq);
     if (node->inc)
       gen(node->inc);
     // printf("  jmp L.begin.%d\n", seq);
     // printf("L.break.%d:\n", seq);
-    printf("  !L.begin.%d\n", seq);
-    printf("@L.break.%d\n", seq);
+    jmi("L.begin.%d", seq);
+    at("L.break.%d", seq);
 
     brkseq = brk;
     contseq = cont;
@@ -565,17 +604,19 @@ static void gen(Node *node) {
     brkseq = contseq = seq;
 
     // printf("L.begin.%d:\n", seq);
-    printf("@L.begin.%d\n", seq);
+    at("L.begin.%d", seq);
     gen(node->then);
     // printf("L.continue.%d:\n", seq);
-    printf("@L.continue.%d\n", seq);
+    at("L.continue.%d", seq);
     gen(node->cond);
     // printf("  pop rax\n");
     // printf("  cmp rax, 0\n");
     // printf("  jne L.begin.%d\n", seq);
     // printf("L.break.%d:\n", seq);
-    printf("  #0000 NEQ2 ?L.begin.%d\n", seq);
-    printf("@L.break.%d\n", seq);
+    lit2(0);
+    op(NEQ2);
+    jci("L.begin.%d", seq);
+    at("L.break.%d", seq);
 
     brkseq = brk;
     contseq = cont;
@@ -595,27 +636,29 @@ static void gen(Node *node) {
       n->case_end_label = seq;
       // printf("  cmp rax, %ld\n", n->val);
       // printf("  je L.case.%d\n", n->case_label);
-      printf("  DUP2 #%04x EQU2 ?L.case.%d\n", (unsigned short)n->val,
-             n->case_label);
+      op(DUP2);
+      lit2(n->val);
+      op(EQU2);
+      jci("L.case.%d", n->case_label);
     }
 
     if (node->default_case) {
       int i = labelseq++;
       node->default_case->case_end_label = seq;
       node->default_case->case_label = i;
-      printf("  !L.case.%d\n", i);
+      jmi("L.case.%d", i);
     }
 
-    printf("  !L.break.%d\n", seq);
+    jmi("L.break.%d", seq);
     gen(node->then);
-    printf("@L.break.%d\n", seq);
-    printf("  POP2\n");
+    at("L.break.%d", seq);
+    op(POP2);
 
     brkseq = brk;
     return;
   }
   case ND_CASE:
-    printf("@L.case.%d\n", node->case_label);
+    at("L.case.%d", node->case_label);
     gen(node->lhs);
     return;
   case ND_BLOCK:
@@ -627,50 +670,63 @@ static void gen(Node *node) {
     if (brkseq == 0)
       error_tok(node->tok, "stray break");
     // printf("  jmp L.break.%d\n", brkseq);
-    printf("  !L.break.%d\n", brkseq);
+    jmi("L.break.%d", brkseq);
     return;
   case ND_CONTINUE:
     if (contseq == 0)
       error_tok(node->tok, "stray continue");
     // printf("  jmp L.continue.%d\n", contseq);
-    printf("  !L.continue.%d\n", contseq);
+    jmi("L.continue.%d", contseq);
     return;
   case ND_GOTO:
     // printf("  jmp L.label.%s.%s\n", funcname, node->label_name);
-    printf("  !L.label.%s.%s\n", funcname, node->label_name);
+    jmi("L.label.%s.%s", funcname, node->label_name);
     return;
   case ND_LABEL:
     // printf("L.label.%s.%s:\n", funcname, node->label_name);
-    printf("@L.label.%s.%s\n", funcname, node->label_name);
+    at("L.label.%s.%s", funcname, node->label_name);
     gen(node->lhs);
     return;
   case ND_FUNCALL: {
     if (!strcmp(node->funcname, "deo")) {
       gen(node->args);
-      printf("  NIP\n");
+      op(NIP);
       gen(node->args->next);
-      printf("  NIP DEO #0000\n"); // Will be followed by POP2
+      op(NIP);
+      op(DEO);
+      lit2(0); // Will be followed by POP2
       return;
     }
     if (!strcmp(node->funcname, "deo2")) {
       gen(node->args);
       gen(node->args->next);
-      printf("  NIP DEO2 #0000\n"); // Will be followed by POP2
+      op(NIP);
+      op(DEO2);
+      lit2(0); // Will be followed by POP2
       return;
     }
     if (!strcmp(node->funcname, "dei")) {
       gen(node->args);
-      printf("  NIP DEI #00 SWP\n");
+      op(NIP);
+      op(DEI);
+      lit(0);
+      op(SWP);
       return;
     }
     if (!strcmp(node->funcname, "dei2")) {
       gen(node->args);
-      printf("  NIP DEI2\n");
+      op(NIP);
+      op(DEI2);
       return;
     }
     if (!strcmp(node->funcname, "exit")) {
       gen(node->args);
-      printf("  NIP #80 ORA #0f DEO BRK\n");
+      op(NIP);
+      lit(0x80);
+      op(ORA);
+      lit(0x0f);
+      op(DEO);
+      op(BRK);
       return;
     }
     if (!strcmp(node->funcname, "__builtin_va_start")) {
@@ -710,7 +766,7 @@ static void gen(Node *node) {
     // if (node->ty->kind == TY_BOOL)
     //   printf("  movzb rax, al\n");
     // printf("  push rax\n");
-    printf("  %s_\n", node->funcname);
+    jsi("%s_", node->funcname);
     return;
   }
   case ND_RETURN:
@@ -718,9 +774,9 @@ static void gen(Node *node) {
       gen(node->lhs);
       // printf("  pop rax\n");
     } else {
-      printf("  #0000\n"); // dummy return value
+      lit2(0); // dummy return value
     }
-    printf("  !L.return.%s\n", funcname);
+    jmi("L.return.%s", funcname);
     return;
   case ND_CAST:
     gen(node->lhs);
@@ -818,9 +874,14 @@ static void emit_data(Program *prog) {
 }
 
 static void load_arg(Var *var /*, int idx*/) {
-  printf("  STH2kr\n");
+  op(STH2kr);
   emit_add(var->offset);
-  printf(var->ty->size == 1 ? "STA POP\n" : "STA2\n");
+  if (var->ty->size == 1) {
+    op(STA);
+    op(POP);
+  } else {
+    op(STA2);
+  }
 
   // int sz = var->ty->size;
   // if (sz == 1) {
@@ -843,7 +904,7 @@ static void emit_text(Program *prog) {
     //   printf(".global %s\n", fn->name);
     // Name is suffixed with _ so that uxnasm won't complain if it happens to be
     // hexadecimal.
-    printf("@%s_\n", fn->name);
+    at("%s_", fn->name);
     funcname = fn->name;
 
     // Prologue
@@ -852,9 +913,10 @@ static void emit_text(Program *prog) {
     // printf("  sub rsp, %d\n", fn->stack_size);
 
     // Copy the frame pointer from the "frame" below.
-    printf("  OVR2r\n");
+    op(OVR2 | flag_r);
     if (fn->stack_size != 0) {
-      printf("  LIT2r %04x SUB2r\n", fn->stack_size);
+      lit2r(fn->stack_size);
+      op(SUB2 | flag_r);
     }
 
     // Save arg registers if function is variadic
@@ -883,15 +945,16 @@ static void emit_text(Program *prog) {
       gen(node);
 
     // Epilogue
-    printf("  #0000\n"); // dummy return value
-    printf("@L.return.%s\n", funcname);
+    lit2(0); // dummy return value
+    at("L.return.%s", funcname);
     // printf("  mov rsp, rbp\n");
     // printf("  pop rbp\n");
     // printf("  ret\n");
 
     // Pop the frame pointer, then return.
     truncate(fn->ty);
-    printf("  POP2r JMP2r\n");
+    op(POP2r);
+    op(JMP2r);
   }
 
   if (need_sext_helper) {
@@ -988,6 +1051,7 @@ void codegen(Program *prog) {
 
   Instruction out = {};
   emit_head = &out;
-
   emit_text(prog);
+  optimize(&out);
+  output(&out);
 }
