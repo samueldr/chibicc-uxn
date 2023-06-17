@@ -290,3 +290,19 @@ void add_type(Node *node);
 //
 
 void codegen(Program *prog);
+
+//
+// optimize.c
+//
+
+typedef struct Instruction Instruction;
+struct Instruction {
+  char opcode[7];
+  unsigned short literal; // appended if opcode is "LIT"
+  char *label; // appended if opcode is "JSI", "JMI", "JCI"
+  Instruction *next;
+};
+Instruction *emit(Instruction *head, char* opcode, int literal, char* label);
+void optimize(Instruction* prog);
+void output(Instruction* prog);
+void proof_of_concept(void);
