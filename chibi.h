@@ -295,14 +295,106 @@ void codegen(Program *prog);
 // optimize.c
 //
 
+typedef enum {
+  // 0x00 is used to indicate "no opcode" rather than BRK (0x100).
+  INC = 0x01,
+  POP = 0x02,
+  NIP = 0x03,
+  SWP = 0x04,
+  ROT = 0x05,
+  DUP = 0x06,
+  OVR = 0x07,
+  EQU = 0x08,
+  NEQ = 0x09,
+  GTH = 0x0a,
+  LTH = 0x0b,
+  // JMP = 0x0c,
+  // JCN = 0x0d,
+  // JSR = 0x0e,
+  STH = 0x0f,
+  // LDZ = 0x10,
+  // STZ = 0x11,
+  // LDR = 0x12,
+  // STR = 0x13,
+  LDA = 0x14,
+  STA = 0x15,
+  DEI = 0x16,
+  DEO = 0x17,
+  ADD = 0x18,
+  SUB = 0x19,
+  MUL = 0x1a,
+  DIV = 0x1b,
+  AND = 0x1c,
+  ORA = 0x1d,
+  EOR = 0x1e,
+  SFT = 0x1f,
+
+  flag_2 = 0x20,
+  flag_r = 0x40,
+  flag_k = 0x80,
+
+  INC2 = INC | flag_2,
+  POP2 = POP | flag_2,
+  NIP2 = NIP | flag_2,
+  SWP2 = SWP | flag_2,
+  ROT2 = ROT | flag_2,
+  DUP2 = DUP | flag_2,
+  OVR2 = OVR | flag_2,
+  EQU2 = EQU | flag_2,
+  NEQ2 = NEQ | flag_2,
+  GTH2 = GTH | flag_2,
+  LTH2 = LTH | flag_2,
+  STH2 = STH | flag_2,
+  LDA2 = LDA | flag_2,
+  STA2 = STA | flag_2,
+  DEI2 = DEI | flag_2,
+  DEO2 = DEO | flag_2,
+  ADD2 = ADD | flag_2,
+  SUB2 = SUB | flag_2,
+  MUL2 = MUL | flag_2,
+  DIV2 = DIV | flag_2,
+  AND2 = AND | flag_2,
+  ORA2 = ORA | flag_2,
+  EOR2 = EOR | flag_2,
+  SFT2 = SFT | flag_2,
+
+  POP2r = POP2 | flag_r,
+  JMP2r = 0x6c,
+
+  JCI = 0x20, // ?label
+  JMI = 0x40, // !label
+  JSI = 0x60, // label
+
+  LIT = 0x80,
+  LIT2 = 0xa0,
+  LIT2r = 0xe0,
+
+  BRK = 0x100,
+  AT = 0x101, // @label
+  SEMI = 0x102, // ;label
+  BAR = 0x103, // |0000
+} Opcode;
+
 typedef struct Instruction Instruction;
 struct Instruction {
-  char opcode[7];
+  Opcode opcode;
   unsigned short literal; // appended if opcode is "LIT"
   char *label; // appended if opcode is "JSI", "JMI", "JCI"
   Instruction *next;
 };
-Instruction *emit(Instruction *head, char* opcode, int literal, char* label);
+
+extern Instruction *emit_head;
+void emit(Opcode opcode, int literal, char* label);
+void op(Opcode o);
+void jci(char* s);
+void jmi(char* s);
+void jsi(char* s);
+void lit(unsigned char n);
+void lit2(unsigned short n);
+void at(char* s);
+void semi(char* s);
+void bar(unsigned short n);
+
 void optimize(Instruction* prog);
 void output(Instruction* prog);
 void proof_of_concept(void);
