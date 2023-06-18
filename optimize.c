@@ -31,30 +31,74 @@ void semi(char* fmt, ...) { va_list va; va_start(va, fmt); vsprintf(buf, fmt, va
 void bar(unsigned short n) { emit(BAR, n, ""); }
 
 #define ConstantFolding(o, x) \
-    if (prog->opcode == LIT2 && prog->next->opcode == LIT2 && prog->next->next->opcode == o) { \
-      prog->literal x prog->next->literal; \
+    if (prog->opcode == LIT2 && prog->next->opcode == LIT2 && prog->next->next->opcode == (o | flag_2)) { \
+      prog->literal = prog->literal x prog->next->literal; \
+      prog->next = prog->next->next->next; \
+      changed = true; \
+      continue; \
+    } \
+    if (prog->opcode == LIT && prog->next->opcode == LIT && prog->next->next->opcode == o) { \
+      prog->literal = (unsigned char)prog->literal x (unsigned char)prog->next->literal; \
       prog->next = prog->next->next->next; \
       changed = true; \
       continue; \
     }
 
-static bool optimize_pass(Instruction* prog) {
+static bool optimize_pass(Instruction* prog, int stage) {
   bool changed = false;
   while (prog->opcode) {
     if (prog->next && prog->next->next) {
-      ConstantFolding(ADD2, +=);
-      ConstantFolding(SUB2, -=);
-      ConstantFolding(MUL2, *=);
-      ConstantFolding(DIV2, /=);
-      ConstantFolding(AND2, &=);
-      ConstantFolding(ORA2, |=);
-      ConstantFolding(EOR2, ^=);
+      ConstantFolding(ADD, +);
+      ConstantFolding(SUB, -);
+      ConstantFolding(MUL, *);
+      ConstantFolding(DIV, /);
+      ConstantFolding(AND, &);
+      ConstantFolding(ORA, |);
+      ConstantFolding(EOR, ^);
+      ConstantFolding(EQU, ==);
+      ConstantFolding(NEQ, !=);
     }
 
     // Fold INC2
     if (prog->opcode == LIT2 && prog->next && prog->next->opcode == INC2) {
       ++prog->literal;
       prog->next = prog->next->next;
+      changed = true;
+      continue;
+    }
+
+    // #0001 ADD2 -> INC2
+    if (prog->opcode == LIT2 && prog->literal == 1 && prog->next && prog->next->opcode == ADD2) {
+      prog->opcode = INC2;
+      prog->next = prog->next->next;
+      changed = true;
+      continue;
+    }
+
+    // #0000 +-|^ -> nothing
+    if (prog->opcode == LIT2 && prog->literal == 0 && prog->next && (prog->next->opcode == ADD2 || prog->next->opcode == SUB2 || prog->next->opcode == ORA2 || prog->next->opcode == EOR2)) {
+      memcpy(prog, prog->next->next, sizeof(Instruction));
+      changed = true;
+      continue;
+    }
+
+    // #xxxx POP2 cancels out
+    if (prog->opcode == LIT2 && prog->next && prog->next->opcode == POP2) {
+      memcpy(prog, prog->next->next, sizeof(Instruction));
+      changed = true;
+      continue;
+    }
+
+    // sext NIP cancels out
+    if (prog->opcode == JSI && !strcmp("sext", prog->label) && prog->next && prog->next->opcode == NIP) {
+      memcpy(prog, prog->next->next, sizeof(Instruction));
+      changed = true;
+      continue;
+    }
+
+    // #0001 muldiv -> nothing
+    if (prog->opcode == LIT2 && prog->literal == 1 && prog->next && (prog->next->opcode == MUL2 || prog->next->opcode == DIV2)) {
+      memcpy(prog, prog->next->next, sizeof(Instruction));
       changed = true;
       continue;
     }
@@ -68,10 +112,52 @@ static bool optimize_pass(Instruction* prog) {
       continue;
     }
 
-    // Example: DUP2 DUP2 -> DUP2k
-    if (prog->opcode == DUP2 && prog->next && prog->next->opcode == DUP2) {
-      prog->opcode = DUP2 | flag_k;
+    // Combine literals
+    if (stage >= 1 && prog->opcode == LIT && prog->next && prog->next->opcode == LIT) {
+      prog->opcode = LIT2;
+      prog->literal = prog->literal << 8 | prog->next->literal;
       prog->next = prog->next->next;
+      changed = true;
+      continue;
+    }
+
+    // Associative addition: x ADD y ADD = (x+y) ADD
+    if (prog->opcode == LIT2
+        && prog->next && prog->next->opcode == ADD2
+        && prog->next->next && prog->next->next->opcode == LIT2
+        && prog->next->next->next && prog->next->next->next->opcode == ADD2) {
+      prog->literal += prog->next->next->literal;
+      prog->next->next = prog->next->next->next->next;
+      changed = true;
+      continue;
+    }
+
+    // A common sequence: DUP2 ROT2 STA2 POP2 -> SWP2 STA2
+    if (prog->opcode == DUP2
+        && prog->next && prog->next->opcode == ROT2
+        && prog->next->next && prog->next->next->opcode == STA2
+        && prog->next->next->next && prog->next->next->next->opcode == POP2) {
+      prog->opcode = SWP2;
+      prog->next->opcode = STA2;
+      prog->next->next = prog->next->next->next->next;
+      changed = true;
+      continue;
+    }
+
+    // A common sequence: STH2kr #xxxx ADD2 #yyyy SWP2 -> #yyyy STH2kr #xxxx ADD2
+    if (prog->opcode == STH2kr
+        && prog->next && prog->next->opcode == LIT2
+        && prog->next->next && prog->next->next->opcode == ADD2
+        && prog->next->next->next && prog->next->next->next->opcode == LIT2
+        && prog->next->next->next->next && prog->next->next->next->next->opcode == SWP2) {
+      int x = prog->next->literal;
+      prog->opcode = LIT2;
+      prog->literal = prog->next->next->next->literal;
+      prog->next->opcode = STH2kr;
+      prog->next->next->opcode = LIT2;
+      prog->next->next->literal = x;
+      prog->next->next->next->opcode = ADD2;
+      prog->next->next->next->next = prog->next->next->next->next->next;
       changed = true;
       continue;
     }
@@ -82,7 +168,8 @@ static bool optimize_pass(Instruction* prog) {
 }
 
 void optimize(Instruction* prog) {
-  while (optimize_pass(prog));
+  while (optimize_pass(prog, 0));
+  while (optimize_pass(prog, 1));
 }
 
 void output_one(Instruction* ins) {
