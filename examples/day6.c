@@ -61,8 +61,7 @@ void draw_background(void) {
   int max_x = screen_width();
   for (int y = WALL_MARGIN; y < max_y; y += 8) {
     for (int x = 0; x < max_x; x += 8) {
-      set_screen_x(x);
-      set_screen_y(y);
+      set_screen_xy(x, y);
       draw_sprite(3);
     }
   }
@@ -115,8 +114,7 @@ void update_paddles(void) {
 }
 
 void draw_ball(char color) {
-  set_screen_x(ball.x);
-  set_screen_y(ball.y);
+  set_screen_xy(ball.x, ball.y);
   set_screen_addr(ball_sprite);
   set_screen_auto(Auto2ay);
   draw_sprite(color);
@@ -124,8 +122,7 @@ void draw_ball(char color) {
 }
 
 void draw_paddle(int x, int y, char color) {
-  set_screen_x(x);
-  set_screen_y(y);
+  set_screen_xy(x, y);
   set_screen_addr(paddle_sprite);
   set_screen_auto(Auto2ay);
   draw_sprite(color);

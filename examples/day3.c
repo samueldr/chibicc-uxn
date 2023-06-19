@@ -13,7 +13,6 @@ void on_controller() {
 
 void main() {
   palette(0x2ce9, 0x01c0, 0x7ce5);
-  set_screen_x(8);
-  set_screen_y(8);
+  set_screen_xy(8, 8);
   set_screen_addr(square);
 }
