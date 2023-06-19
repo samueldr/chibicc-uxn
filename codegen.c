@@ -589,6 +589,22 @@ static void gen(Node *node) {
     op(EOR);
     return;
 
+  // These are commutative, so we'll move literals to the right for the optimizer.
+  case ND_ADD:
+  case ND_MUL:
+  case ND_BITAND:
+  case ND_BITOR:
+  case ND_BITXOR:
+  case ND_EQ:
+  case ND_NE:
+    if (node->lhs->kind == ND_NUM) {
+      gen(node->rhs);
+      gen(node->lhs);
+      gen_binary(node);
+      return;
+    }
+    // Else, fall through
+
   default: // Binary operations
     gen(node->lhs);
     gen(node->rhs);
