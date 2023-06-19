@@ -358,7 +358,8 @@ typedef enum {
   EOR2 = EOR | flag_2,
   SFT2 = SFT | flag_2,
 
-  STH2kr = STH | flag_2 | flag_k | flag_r,
+  STA2k = STA2 | flag_k,
+  STH2kr = STH2 | flag_k | flag_r,
   POP2r = POP2 | flag_r,
   JMP2r = 0x6c,
 

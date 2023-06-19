@@ -11,8 +11,6 @@ static int contseq;
 static char *funcname;
 static bool need_sext_helper;
 static bool need_ashr_helper;
-static bool need_slt_helper;
-static bool need_sle_helper;
 static bool need_sdiv_helper;
 
 static void gen(Node *node);
@@ -86,49 +84,24 @@ static void load(Type *ty) {
   }
 }
 
-// Expects "addr oldval newval" on the stack and leaves "oldval".
-static void store_inner(Type *ty) {
+// Expects "newval addr" on the stack and leaves "newval".
+static void store(Type *ty) {
   if (ty->size == 1) {
-    if (ty->kind == TY_BOOL) {
-      lit2(0);
-      op(NEQ2);
-      lit(0);
-      op(SWP);
-    }
-    op(ROT2);
-    op(STA);
-    op(POP);
+    op(STA | flag_k);
+    op(POP2);
   } else {
-    op(ROT2);
-    op(STA2);
+    op(STA2 | flag_k);
+    op(POP2);
   }
 }
 
-// Expects "addr newval" on the stack and leaves "newval".
-static void store(Type *ty) {
-  // printf("  pop rdi\n");
-  // printf("  pop rax\n");
-
-  // if (ty->kind == TY_BOOL) {
-  //   printf("  cmp rdi, 0\n");
-  //   printf("  setne dil\n");
-  //   printf("  movzb rdi, dil\n");
-  // }
-
-  // if (ty->size == 1) {
-  //   printf("  mov [rax], dil\n");
-  // } else if (ty->size == 2) {
-  //   printf("  mov [rax], di\n");
-  // } else if (ty->size == 4) {
-  //   printf("  mov [rax], edi\n");
-  // } else {
-  //   assert(ty->size == 8);
-  //   printf("  mov [rax], rdi\n");
-  // }
-
-  // printf("  push rdi\n");
-  op(DUP2);
-  store_inner(ty);
+static void fix_bool(Type *ty) {
+  if (ty->kind == TY_BOOL) {
+    lit2(0);
+    op(NEQ2);
+    lit(0);
+    op(SWP);
+  }
 }
 
 static void truncate(Type *ty) {
@@ -148,10 +121,7 @@ static void truncate(Type *ty) {
   // }
   // printf("  push rax\n");
   if (ty->kind == TY_BOOL) {
-    lit2(0);
-    op(NEQ2);
-    lit(0);
-    op(SWP);
+    fix_bool(ty);
   } else if (ty->size == 1) {
     need_sext_helper = 1;
     op(NIP);
@@ -285,20 +255,6 @@ static void gen_binary(Node *node) {
     lit(0);
     op(SWP);
     break;
-  case ND_LT:
-    // printf("  cmp rax, rdi\n");
-    // printf("  setl al\n");
-    // printf("  movzb rax, al\n");
-    need_slt_helper = true;
-    jsi("slt");
-    break;
-  case ND_LE:
-    // printf("  cmp rax, rdi\n");
-    // printf("  setle al\n");
-    // printf("  movzb rax, al\n");
-    need_sle_helper = true;
-    jsi("sle");
-    break;
   default:
     error_tok(node->tok, "not a binary operation");
   }
@@ -345,8 +301,9 @@ static void gen(Node *node) {
       load(node->ty);
     return;
   case ND_ASSIGN:
-    gen_lval(node->lhs);
     gen(node->rhs);
+    fix_bool(node->ty);
+    gen_lval(node->lhs);
     store(node->ty);
     return;
   case ND_TERNARY: {
@@ -370,6 +327,8 @@ static void gen(Node *node) {
     op(DUP2);
     load(node->ty);
     inc(node->ty);
+    fix_bool(node->ty);
+    op(SWP2);
     store(node->ty);
     return;
   case ND_PRE_DEC:
@@ -378,6 +337,8 @@ static void gen(Node *node) {
     op(DUP2);
     load(node->ty);
     dec(node->ty);
+    fix_bool(node->ty);
+    op(SWP2);
     store(node->ty);
     return;
   case ND_POST_INC:
@@ -387,7 +348,10 @@ static void gen(Node *node) {
     load(node->ty);
     op(DUP2);
     inc(node->ty);
-    store_inner(node->ty);
+    fix_bool(node->ty);
+    op(ROT2);
+    store(node->ty);
+    op(POP2);
     // dec(node->ty);
     return;
   case ND_POST_DEC:
@@ -397,7 +361,10 @@ static void gen(Node *node) {
     load(node->ty);
     op(DUP2);
     dec(node->ty);
-    store_inner(node->ty);
+    fix_bool(node->ty);
+    op(ROT2);
+    store(node->ty);
+    op(POP2);
     // inc(node->ty);
     return;
   case ND_ADD_EQ:
@@ -417,6 +384,8 @@ static void gen(Node *node) {
     load(node->lhs->ty);
     gen(node->rhs);
     gen_binary(node);
+    fix_bool(node->ty);
+    op(SWP2);
     store(node->ty);
     return;
   case ND_COMMA:
@@ -782,6 +751,31 @@ static void gen(Node *node) {
     gen(node->lhs);
     truncate(node->ty);
     return;
+  case ND_LT:
+    gen(node->lhs);
+    lit2(0x8000);
+    op(EOR2);
+    gen(node->rhs);
+    lit2(0x8000);
+    op(EOR2);
+    op(LTH2);
+    lit(0);
+    op(SWP);
+    return;
+  case ND_LE:
+    gen(node->lhs);
+    lit2(0x8000);
+    op(EOR2);
+    gen(node->rhs);
+    lit2(0x8000);
+    op(EOR2);
+    op(GTH2);
+    lit(0);
+    op(SWP);
+    lit(1);
+    op(EOR);
+    return;
+
   default: // Binary operations
     gen(node->lhs);
     gen(node->rhs);
@@ -982,19 +976,6 @@ static void emit_text(Program *prog) {
     printf("  EOR2\n");
     // Return
     printf("  JMP2r\n");
-  }
-  if (need_slt_helper) {
-    // Signed less-than
-    // uxn's LTH is unsigned, so we flip the sign bits to get signed comparison
-    // The masking requires some stack juggling, so we use GTH to save a SWP.
-    printf("@slt\n");
-    printf("  #8000 EOR2 SWP2 #8000 EOR2 GTH2 #00 SWP JMP2r\n");
-  }
-  if (need_sle_helper) {
-    // Signed less-than-or-equal-to
-    // Same deal as with less-than, but using (a <= b) == !(a > b)
-    printf("@sle\n");
-    printf("  #8000 EOR2 SWP2 #8000 EOR2 LTH2 #00 SWP #01 EOR JMP2r\n");
   }
   if (need_sdiv_helper) {
     // Signed division (uxn's DIV is unsigned)

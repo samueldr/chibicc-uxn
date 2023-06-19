@@ -103,6 +103,17 @@ static bool optimize_pass(Instruction* prog, int stage) {
       continue;
     }
 
+    // pow2 muldiv -> SFT2
+    if (prog->opcode == LIT2 && prog->literal > 1 && (prog->literal & (prog->literal - 1)) == 0 && prog->next && (prog->next->opcode == MUL2 || prog->next->opcode == DIV2)) {
+      prog->opcode = LIT;
+      int log2 = 0;
+      while (prog->literal >>= 1) log2++;
+      prog->literal = log2 << (prog->next->opcode == MUL2 ? 4 : 0);
+      prog->next->opcode = SFT2;
+      changed = true;
+      continue;
+    }
+
     // Shrink literals
     if (prog->opcode == LIT2 && prog->next && prog->next->opcode == NIP) {
       prog->opcode = LIT;
@@ -132,14 +143,31 @@ static bool optimize_pass(Instruction* prog, int stage) {
       continue;
     }
 
-    // A common sequence: DUP2 ROT2 STA2 POP2 -> SWP2 STA2
-    if (prog->opcode == DUP2
-        && prog->next && prog->next->opcode == ROT2
-        && prog->next->next && prog->next->next->opcode == STA2
-        && prog->next->next->next && prog->next->next->next->opcode == POP2) {
-      prog->opcode = SWP2;
-      prog->next->opcode = STA2;
-      prog->next->next = prog->next->next->next->next;
+    // A common sequence: STA2k POP2 POP2 -> STA2
+    if (prog->opcode == STA2k
+        && prog->next && prog->next->opcode == POP2
+        && prog->next->next && prog->next->next->opcode == POP2) {
+      prog->opcode = STA2;
+      prog->next = prog->next->next->next;
+      changed = true;
+      continue;
+    }
+
+    // A common sequence: STAk POP2 POP2 -> STA POP
+    if (prog->opcode == (STA | flag_k)
+        && prog->next && prog->next->opcode == POP2
+        && prog->next->next && prog->next->next->opcode == POP2) {
+      prog->opcode = STA;
+      prog->next->opcode = POP;
+      prog->next->next = prog->next->next->next;
+      changed = true;
+      continue;
+    }
+
+    // DUP2 (INC2|LDA2|DUP2) -> +k
+    if (prog->opcode == DUP2 && prog->next && (prog->next->opcode == INC2 || prog->next->opcode == LDA2 || prog->next->opcode == DUP2)) {
+      prog->opcode = (prog->next->opcode | flag_k);
+      prog->next = prog->next->next;
       changed = true;
       continue;
     }
@@ -160,6 +188,24 @@ static bool optimize_pass(Instruction* prog, int stage) {
       prog->next->next->next->next = prog->next->next->next->next->next;
       changed = true;
       continue;
+    }
+
+    // EQU2 #00 SWP #0000 EQU2 -> NEQ2
+    if (prog->opcode == EQU2
+        && prog->next && prog->next->opcode == LIT && prog->next->literal == 0
+        && prog->next->next && prog->next->next->opcode == SWP
+        && prog->next->next->next && prog->next->next->next->opcode == LIT2 && prog->next->literal == 0
+        && prog->next->next->next->next && prog->next->next->next->next->opcode == EQU2) {
+      prog->opcode = NEQ2;
+      prog->next = prog->next->next->next->next->next;
+    }
+
+    // #0000 NEQ2 ? -> ORA ?
+    if (prog->opcode == LIT2 && prog->literal == 0
+        && prog->next && prog->next->opcode == NEQ2
+        && prog->next->next && prog->next->next->opcode == JCI) {
+      prog->opcode = ORA;
+      prog->next = prog->next->next;
     }
 
     prog = prog->next;
