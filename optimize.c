@@ -43,6 +43,20 @@ void bar(unsigned short n) { emit(BAR, n, ""); }
       changed = true; \
       continue; \
     }
+#define ConstantFoldingComparison(o, x) \
+    if (prog->opcode == LIT2 && prog->next->opcode == LIT2 && prog->next->next->opcode == (o | flag_2)) { \
+      prog->opcode = LIT; /* always one-byte result */ \
+      prog->literal = prog->literal x prog->next->literal; \
+      prog->next = prog->next->next->next; \
+      changed = true; \
+      continue; \
+    } \
+    if (prog->opcode == LIT && prog->next->opcode == LIT && prog->next->next->opcode == o) { \
+      prog->literal = (unsigned char)prog->literal x (unsigned char)prog->next->literal; \
+      prog->next = prog->next->next->next; \
+      changed = true; \
+      continue; \
+    }
 
 static bool optimize_pass(Instruction* prog, int stage) {
   bool changed = false;
@@ -55,8 +69,10 @@ static bool optimize_pass(Instruction* prog, int stage) {
       ConstantFolding(AND, &);
       ConstantFolding(ORA, |);
       ConstantFolding(EOR, ^);
-      ConstantFolding(EQU, ==);
-      ConstantFolding(NEQ, !=);
+      ConstantFoldingComparison(EQU, ==);
+      ConstantFoldingComparison(NEQ, !=);
+      ConstantFoldingComparison(GTH, >);
+      ConstantFoldingComparison(LTH, <);
     }
 
     // Fold INC2
