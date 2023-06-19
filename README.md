@@ -2,11 +2,26 @@
 
 This is Rui Ueyama's [chibicc@historical/old](https://github.com/rui314/chibicc/tree/historical/old), retargeted to compile to [Uxn](https://100r.co/site/uxn.html).
 
-Try `make`, then something like
+```c
+#include <uxn.h>  // #define putchar(c) deo(c, 0x18)
+
+void puts(char *s) {
+  while (*s) putchar(*s++);
+  putchar('\n');
+}
+
+void main() {
+  puts("Hello, world!");
+}
+```
+
+## Usage
+
+Running `make` will build `./chibicc`.
+
+chibicc itself has no preprocessor, but any C compiler's `-E` flag will do. We use `-I.` to include uxn.h and `-P` to eliminate `#` lines from the preprocessor output:
 
 ```sh
-# chibicc has no preprocessor, but any C compiler's -E flag will do.
-# We use -I. to include uxn.h and -P to eliminate "#" lines from the preprocessor output.
 gcc -I. -P -E examples/day3.c -o tmp.c
 ./chibicc tmp.c > c.tal
 uxnasm c.tal c.rom
@@ -36,8 +51,11 @@ To set up Varvara event handlers, just define any of the following functions:
 - `void on_audio1(void);`
   - Called when audio ends on channel 1.
 - `void on_audio2(void);`
+  - Called when audio ends on channel 2.
 - `void on_audio3(void);`
+  - Called when audio ends on channel 3.
 - `void on_audio4(void);`
+  - Called when audio ends on channel 4.
 - `void on_controller(void);`
   - Called when a button is pressed or released on the controller or keyboard. Call `controller_button()` or `controller_key()` to process it.
 - `void on_mouse(void);`
