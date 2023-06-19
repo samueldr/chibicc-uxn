@@ -289,7 +289,7 @@ void add_type(Node *node);
 // codegen.c
 //
 
-void codegen(Program *prog);
+void codegen(Program *prog, bool do_opt);
 
 //
 // optimize.c

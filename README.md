@@ -14,7 +14,7 @@ void main() {}
 ```
 
 <details>
-  <summary>Output</summary>
+  <summary>Output (with optimization)</summary>
 
 ```
 |0100
@@ -50,10 +50,12 @@ chibicc itself has no preprocessor, but any C compiler's `-E` flag will do. We u
 
 ```sh
 gcc -I. -P -E examples/day3.c -o tmp.c
-./chibicc tmp.c > c.tal
+./chibicc -O1 tmp.c > c.tal
 uxnasm c.tal c.rom
 uxnemu c.rom
 ```
+
+The `-O1` or `-O` flag enables the optimization pass. If the flag is omitted, this is equivalent to `-O0` (no optimization).
 
 For a more complex and visually interesting demo, try `examples/star.c`.
 

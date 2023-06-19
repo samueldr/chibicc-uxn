@@ -21,13 +21,27 @@ static char *read_file(char *path) {
 }
 
 int main(int argc, char **argv) {
-  if (argc != 2) {
-    error("%s: invalid number of arguments", argv[0]);
+  bool do_opt = false;
+
+  for (int i = 1; i < argc; i++) {
+    if (!strcmp("-O", argv[i]) || !strcmp("-O1", argv[i])) {
+      do_opt = true;
+    } else if (!strcmp("-O0", argv[i])) {
+      do_opt = false;
+    } else if (argv[i][0] == '-') {
+      error("%s: unrecognized option \"%s\"", argv[0], argv[i]);
+    } else if (!filename) {
+      filename = argv[i];
+    } else {
+      error("%s: can't specify more than one filename", argv[0]);
+    }
+  }
+  if (!filename) {
+    error("%s: a filename is required", argv[0]);
   }
 
   // Tokenize and parse.
-  filename = argv[1];
-  user_input = read_file(argv[1]);
+  user_input = read_file(filename);
   token = tokenize();
   Program *prog = program();
 
@@ -44,7 +58,7 @@ int main(int argc, char **argv) {
   }
 
   // Traverse the AST to emit assembly.
-  codegen(prog);
+  codegen(prog, do_opt);
 
   return 0;
 }

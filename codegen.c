@@ -1007,7 +1007,7 @@ static Device devices[] = {
     {"audio3", 0x50},  {"audio4", 0x60}, {"controller", 0x80}, {"mouse", 0x90},
 };
 
-void codegen(Program *prog) {
+void codegen(Program *prog, bool do_opt) {
   int i;
   bool need_device_hook[sizeof(devices) / sizeof(Device)] = {false};
 
@@ -1033,6 +1033,7 @@ void codegen(Program *prog) {
   Instruction out = {};
   emit_head = &out;
   emit_text(prog);
-  optimize(&out);
+  if (do_opt)
+    optimize(&out);
   output(&out);
 }

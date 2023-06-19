@@ -17,9 +17,12 @@ $(OBJS): chibi.h
 
 test: chibicc #extern.o
 	cc -I. -P -E -x c tests -o tmp-tests.c
-	./chibicc tmp-tests.c > tmp-tests.tal
-	uxnasm tmp-tests.tal tmp-tests.rom
-	uxncli tmp-tests.rom
+	./chibicc -O0 tmp-tests.c > tmp-tests-O0.tal
+	uxnasm tmp-tests-O0.tal tmp-tests-O0.rom
+	uxncli tmp-tests-O0.rom
+	./chibicc -O1 tmp-tests.c > tmp-tests-O1.tal
+	uxnasm tmp-tests-O1.tal tmp-tests-O1.rom
+	uxncli tmp-tests-O1.rom
 
 #test-gen2: chibicc-gen2 extern.o
 #	./chibicc-gen2 tests > tmp.s
