@@ -85,7 +85,7 @@ static void fix_bool(Type *ty) {
 static void truncate(Type *ty) {
   if (ty->kind == TY_BOOL) {
     fix_bool(ty);
-  } else if (ty->size == 1) {
+  } else if (ty->size == 1 && ty->kind != TY_VOID) {
     need_sext_helper = 1;
     op(NIP);
     jsi("sext");
