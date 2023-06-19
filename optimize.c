@@ -2,9 +2,9 @@
 
 char *opcode_names[0x20] = {
   "BRK", "INC", "POP", "NIP", "SWP", "ROT", "DUP", "OVR",
-	"EQU", "NEQ", "GTH", "LTH", "JMP", "JCN", "JSR", "STH",
-	"LDZ", "STZ", "LDR", "STR", "LDA", "STA", "DEI", "DEO",
-	"ADD", "SUB", "MUL", "DIV", "AND", "ORA", "EOR", "SFT",
+  "EQU", "NEQ", "GTH", "LTH", "JMP", "JCN", "JSR", "STH",
+  "LDZ", "STZ", "LDR", "STR", "LDA", "STA", "DEI", "DEO",
+  "ADD", "SUB", "MUL", "DIV", "AND", "ORA", "EOR", "SFT",
 };
 
 Instruction *emit_head;
