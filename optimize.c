@@ -99,6 +99,13 @@ static bool optimize_pass(Instruction* prog, int stage) {
       continue;
     }
 
+    // LIT SWP NIP cancels out
+    if (prog->opcode == LIT && prog->next && prog->next->opcode == SWP && prog->next->next && prog->next->next->opcode == NIP) {
+      memcpy(prog, prog->next->next->next, sizeof(Instruction));
+      changed = true;
+      continue;
+    }
+
     // #0001 muldiv -> nothing
     if (prog->opcode == LIT2 && prog->literal == 1 && prog->next && (prog->next->opcode == MUL2 || prog->next->opcode == DIV2)) {
       memcpy(prog, prog->next->next, sizeof(Instruction));
