@@ -4,3 +4,4 @@ tmp*
 a.out
 chibicc
 chibicc-gen*
+.vscode
