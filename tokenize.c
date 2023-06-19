@@ -264,7 +264,7 @@ static Token *read_int_literal(Token *cur, char *start) {
     //ty = long_type;
   //} else if (val != (int)val) {
   //  ty = long_type;
-  } else if (val != (short)val) {
+  } else if (val != (short)val && val != (unsigned short)val) {
     error_tok(cur, "integer literal is too large for type int (16-bit)");
   }
 
