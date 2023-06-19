@@ -235,29 +235,35 @@ void optimize(Instruction* prog) {
 }
 
 void output_one(Instruction* ins) {
+  // Puts @ and | at the start of the line, puts all other instructions on
+  // lines indented with two spaces, and starts a new line for more instructions
+  // when we hit a store or a call (we don't know statement boundaries).
   if (ins->opcode == AT) {
-    printf("@%s\n", ins->label);
+    printf("\n@%s\n ", ins->label);
   } else if (ins->opcode == BAR) {
-    printf("|%04x\n", ins->literal);
+    printf("\n|%04x\n ", ins->literal);
   } else if (ins->opcode == SEMI) {
-    printf("  ;%s\n", ins->label);
+    printf(" ;%s", ins->label);
   } else if (ins->opcode == JCI) {
-    printf("  ?%s\n", ins->label);
+    printf(" ?%s\n ", ins->label);
   } else if (ins->opcode == JMI) {
-    printf("  !%s\n", ins->label);
+    printf(" !%s\n ", ins->label);
   } else if (ins->opcode == JSI) {
-    printf("  %s\n", ins->label);
+    printf(" %s\n ", ins->label);
   } else if (ins->opcode == LIT) {
-    printf("  #%02x\n", ins->literal);
+    printf(" #%02x", ins->literal);
   } else if (ins->opcode == LIT2) {
-    printf("  #%04x\n", ins->literal);
+    printf(" #%04x", ins->literal);
   } else if (ins->opcode == LIT2r) {
-    printf("  LIT2r %04x\n", ins->literal);
+    printf(" LIT2r %04x", ins->literal);
   } else {
-    printf("  %s%s%s%s\n", opcode_names[ins->opcode & 0x1f],
+    printf(" %s%s%s%s", opcode_names[ins->opcode & 0x1f],
       ins->opcode & flag_2 ? "2" : "",
       ins->opcode & flag_k ? "k" : "",
       ins->opcode & flag_r ? "r" : "");
+    if ((ins->opcode & 0x1f) == STA) {
+      printf("\n ");
+    }
   }
 }
 
