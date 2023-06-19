@@ -3,17 +3,44 @@
 This is Rui Ueyama's [chibicc@historical/old](https://github.com/rui314/chibicc/tree/historical/old), retargeted to compile to [Uxn](https://100r.co/site/uxn.html).
 
 ```c
-#include <uxn.h>  // #define putchar(c) deo(c, 0x18)
+#include <uxn.h>
 
-void puts(char *s) {
-  while (*s) putchar(*s++);
+void on_controller(void) {
+  putchar(controller_key());
   putchar('\n');
 }
 
-void main() {
-  puts("Hello, world!");
-}
+void main() {}
 ```
+
+<details>
+  <summary>Output</summary>
+
+```
+|0100
+  ;L.controller.hook #80 DEO2
+  LIT2r 0000 main_ POP2r BRK
+  @L.controller.hook LIT2r 0000 on_controller_ POP2 POP2r BRK
+( bss )
+( data )
+( text )
+@on_controller_
+  OVR2r
+  #83 DEI #18 DEO
+  #0a18 DEO
+  #0000
+@L.return.on_controller
+  POP2r
+  JMP2r
+@main_
+  OVR2r
+  #0000
+@L.return.main
+  POP2r
+  JMP2r
+```
+
+</details>
 
 ## Usage
 
