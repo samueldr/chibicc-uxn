@@ -363,8 +363,8 @@ typedef enum {
   POP2r = POP2 | flag_r,
   JMP2r = 0x6c,
 
-  JCI = 0x20, // ?label
-  JMI = 0x40, // !label
+  JCI = 0x20, // ?label or ?&label
+  JMI = 0x40, // !label or !&label
   JSI = 0x60, // label
 
   LIT = 0x80,
@@ -372,8 +372,8 @@ typedef enum {
   LIT2r = 0xe0,
 
   BRK = 0x100,
-  AT = 0x101, // @label
-  SEMI = 0x102, // ;label
+  AT = 0x101, // @label or &label
+  SEMI = 0x102, // ;label or ;&label
   BAR = 0x103, // |0000
 } Opcode;
 

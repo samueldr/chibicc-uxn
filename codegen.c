@@ -229,12 +229,12 @@ static void gen(Node *node, int depth) {
     gen(node->cond, depth);
     lit2(0);
     op(EQU2);
-    jci("L.else.%d", seq);
+    jci("&else.%d", seq);
     gen(node->then, depth);
-    jmi("L.end.%d", seq);
-    at("L.else.%d", seq);
+    jmi("&end.%d", seq);
+    at("&else.%d", seq);
     gen(node->els, depth);
-    at("L.end.%d", seq);
+    at("&end.%d", seq);
     return;
   }
   case ND_PRE_INC:
@@ -326,31 +326,31 @@ static void gen(Node *node, int depth) {
     gen(node->lhs, depth);
     lit2(0);
     op(EQU2);
-    jci("L.false.%d", seq);
+    jci("&false.%d", seq);
     gen(node->rhs, depth);
     lit2(0);
     op(EQU2);
-    jci("L.false.%d", seq);
+    jci("&false.%d", seq);
     lit2(1);
-    jmi("L.end.%d", seq);
-    at("L.false.%d", seq);
+    jmi("&end.%d", seq);
+    at("&false.%d", seq);
     lit2(0);
-    at("L.end.%d", seq);
+    at("&end.%d", seq);
     return;
   }
   case ND_LOGOR: {
     int seq = labelseq++;
     gen(node->lhs, depth);
     op(ORA);
-    jci("L.true.%d", seq);
+    jci("&true.%d", seq);
     gen(node->rhs, depth);
     op(ORA);
-    jci("L.true.%d", seq);
+    jci("&true.%d", seq);
     lit2(0);
-    jmi("L.end.%d", seq);
-    at("L.true.%d", seq);
+    jmi("&end.%d", seq);
+    at("&true.%d", seq);
     lit2(1);
-    at("L.end.%d", seq);
+    at("&end.%d", seq);
     return;
   }
   case ND_IF: {
@@ -359,19 +359,19 @@ static void gen(Node *node, int depth) {
       gen(node->cond, depth);
       lit2(0);
       op(EQU2);
-      jci("L.else.%d", seq);
+      jci("&else.%d", seq);
       gen(node->then, depth);
-      jmi("L.end.%d", seq);
-      at("L.else.%d", seq);
+      jmi("&end.%d", seq);
+      at("&else.%d", seq);
       gen(node->els, depth);
-      at("L.end.%d", seq);
+      at("&end.%d", seq);
     } else {
       gen(node->cond, depth);
       lit2(0);
       op(EQU2);
-      jci("L.end.%d", seq);
+      jci("&end.%d", seq);
       gen(node->then, depth);
-      at("L.end.%d", seq);
+      at("&end.%d", seq);
     }
     return;
   }
@@ -381,16 +381,16 @@ static void gen(Node *node, int depth) {
     int cont = contseq;
     brkseq = contseq = seq;
 
-    at("L.continue.%d", seq);
+    at("&continue.%d", seq);
 
     gen(node->cond, depth);
     lit2(0);
     op(EQU2);
-    jci("L.break.%d", seq);
+    jci("&break.%d", seq);
 
     gen(node->then, depth);
-    jmi("L.continue.%d", seq);
-    at("L.break.%d", seq);
+    jmi("&continue.%d", seq);
+    at("&break.%d", seq);
 
     brkseq = brk;
     contseq = cont;
@@ -404,19 +404,19 @@ static void gen(Node *node, int depth) {
 
     if (node->init)
       gen(node->init, depth);
-    at("L.begin.%d", seq);
+    at("&begin.%d", seq);
     if (node->cond) {
       gen(node->cond, depth);
       lit2(0);
       op(EQU2);
-      jci("L.break.%d", seq);
+      jci("&break.%d", seq);
     }
     gen(node->then, depth);
-    at("L.continue.%d", seq);
+    at("&continue.%d", seq);
     if (node->inc)
       gen(node->inc, depth);
-    jmi("L.begin.%d", seq);
-    at("L.break.%d", seq);
+    jmi("&begin.%d", seq);
+    at("&break.%d", seq);
 
     brkseq = brk;
     contseq = cont;
@@ -428,14 +428,14 @@ static void gen(Node *node, int depth) {
     int cont = contseq;
     brkseq = contseq = seq;
 
-    at("L.begin.%d", seq);
+    at("&begin.%d", seq);
     gen(node->then, depth);
-    at("L.continue.%d", seq);
+    at("&continue.%d", seq);
     gen(node->cond, depth);
     lit2(0);
     op(NEQ2);
-    jci("L.begin.%d", seq);
-    at("L.break.%d", seq);
+    jci("&begin.%d", seq);
+    at("&break.%d", seq);
 
     brkseq = brk;
     contseq = cont;
@@ -455,26 +455,26 @@ static void gen(Node *node, int depth) {
       op(DUP2);
       lit2(n->val);
       op(EQU2);
-      jci("L.case.%d", n->case_label);
+      jci("&case.%d", n->case_label);
     }
 
     if (node->default_case) {
       int i = labelseq++;
       node->default_case->case_end_label = seq;
       node->default_case->case_label = i;
-      jmi("L.case.%d", i);
+      jmi("&case.%d", i);
     }
 
-    jmi("L.break.%d", seq);
+    jmi("&break.%d", seq);
     gen(node->then, depth + 2);
-    at("L.break.%d", seq);
+    at("&break.%d", seq);
     op(POP2);
 
     brkseq = brk;
     return;
   }
   case ND_CASE:
-    at("L.case.%d", node->case_label);
+    at("&case.%d", node->case_label);
     gen(node->lhs, depth);
     return;
   case ND_BLOCK:
@@ -485,18 +485,18 @@ static void gen(Node *node, int depth) {
   case ND_BREAK:
     if (brkseq == 0)
       error_tok(node->tok, "stray break");
-    jmi("L.break.%d", brkseq);
+    jmi("&break.%d", brkseq);
     return;
   case ND_CONTINUE:
     if (contseq == 0)
       error_tok(node->tok, "stray continue");
-    jmi("L.continue.%d", contseq);
+    jmi("&continue.%d", contseq);
     return;
   case ND_GOTO:
-    jmi("L.label.%s.%s", funcname, node->label_name);
+    jmi("&label.%s.%s", funcname, node->label_name);
     return;
   case ND_LABEL:
-    at("L.label.%s.%s", funcname, node->label_name);
+    at("&label.%s.%s", funcname, node->label_name);
     gen(node->lhs, depth);
     return;
   case ND_FUNCALL: {
@@ -574,7 +574,7 @@ static void gen(Node *node, int depth) {
     } else {
       lit2(0); // dummy return value
     }
-    jmi("L.return.%s", funcname);
+    jmi("&return");
     return;
   case ND_CAST:
     gen(node->lhs, depth);
@@ -727,6 +727,9 @@ static void emit_text(Program *prog) {
     // hexadecimal.
     at("%s_", fn->name);
     funcname = fn->name;
+		labelseq = 1;
+		brkseq = 0;
+		contseq = 0;
 
     // Prologue
     // Copy the frame pointer from the "frame" below.
@@ -751,7 +754,7 @@ static void emit_text(Program *prog) {
 
     // Epilogue
     lit2(0); // dummy return value
-    at("L.return.%s", funcname);
+    at("&return");
 
     // Pop the frame pointer, then return.
     truncate(fn->ty);

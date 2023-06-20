@@ -229,41 +229,60 @@ void optimize(Instruction* prog) {
 }
 
 void output_one(Instruction* ins) {
-  // Puts @ and | at the start of the line, puts all other instructions on
-  // lines indented with two spaces, and starts a new line for more instructions
-  // when we hit a store or a call (we don't know statement boundaries).
   if (ins->opcode == AT) {
-    printf("\n@%s\n ", ins->label);
+    printf("%s%s", ins->label[0] == '&' ? "" : "@", ins->label);
   } else if (ins->opcode == BAR) {
-    printf("\n|%04x\n ", ins->literal);
+    printf("|%04x", ins->literal);
   } else if (ins->opcode == SEMI) {
-    printf(" ;%s", ins->label);
+    printf(";%s", ins->label);
   } else if (ins->opcode == JCI) {
-    printf(" ?%s\n ", ins->label);
+    printf("?%s", ins->label);
   } else if (ins->opcode == JMI) {
-    printf(" !%s\n ", ins->label);
+    printf("!%s", ins->label);
   } else if (ins->opcode == JSI) {
-    printf(" %s\n ", ins->label);
+    printf("%s", ins->label);
   } else if (ins->opcode == LIT) {
-    printf(" #%02x", ins->literal);
+    printf("#%02x", ins->literal);
   } else if (ins->opcode == LIT2) {
-    printf(" #%04x", ins->literal);
+    printf("#%04x", ins->literal);
   } else if (ins->opcode == LIT2r) {
-    printf(" LIT2r %04x", ins->literal);
+    printf("LIT2r %04x", ins->literal);
   } else {
-    printf(" %s%s%s%s", opcode_names[ins->opcode & 0x1f],
+    printf("%s%s%s%s", opcode_names[ins->opcode & 0x1f],
       ins->opcode & flag_2 ? "2" : "",
       ins->opcode & flag_k ? "k" : "",
       ins->opcode & flag_r ? "r" : "");
-    if ((ins->opcode & 0x1f) == STA) {
-      printf("\n ");
-    }
   }
 }
 
 void output(Instruction* prog) {
+  bool new_line = true; // did we just have a \n and need to re-indent?
   while (prog->opcode) {
+    if (prog->opcode == AT || prog->opcode == BAR) {
+      printf("\n"); // double newline for all labels
+      if (!new_line) // avoid triple newline after certain instructions
+        printf("\n");
+      if (prog->opcode == AT && prog->label[0] == '&')
+        printf("  "); // half-indent (subordinate label)
+    } else if (new_line) {
+      printf("    "); // indent
+      new_line = false;
+    } else {
+      printf(" "); // separate
+    }
+
     output_one(prog);
+
+    // Labels definitions get their own lines. Other instructions get collected
+    // on one line, and we insert newlines at stores and branches (we don't know
+    // statement boundaries).
+    if (prog->opcode == AT || prog->opcode == BAR || prog->opcode == JCI ||
+        prog->opcode == JMI || prog->opcode == JSI || prog->opcode == JMP2r ||
+        (prog->opcode & 0x1f) == STA) {
+      printf("\n");
+      new_line = true;
+    }
+
     prog = prog->next;
   }
 }
