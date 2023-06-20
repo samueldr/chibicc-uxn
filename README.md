@@ -24,20 +24,18 @@ void main() {}
 ( bss )
 ( data )
 ( text )
+
 @on_controller_
-  OVR2r
-  #83 DEI #18 DEO
-  #0a18 DEO
-  #0000
-@L.return.on_controller
-  POP2r
-  JMP2r
+    OVR2r #83 DEI #18 DEO #0a18 DEO #0000
+
+  &return
+    POP2r JMP2r
+
 @main_
-  OVR2r
-  #0000
-@L.return.main
-  POP2r
-  JMP2r
+    OVR2r #0000
+
+  &return
+    POP2r JMP2r
 ```
 
 </details>
