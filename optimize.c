@@ -30,29 +30,16 @@ void at(char* fmt, ...) { va_list va; va_start(va, fmt); vsprintf(buf, fmt, va);
 void semi(char* fmt, ...) { va_list va; va_start(va, fmt); vsprintf(buf, fmt, va); va_end(va); emit(SEMI, 0, buf); }
 void bar(unsigned short n) { emit(BAR, n, ""); }
 
-#define ConstantFolding(o, x) \
-    if (prog->opcode == LIT2 && prog->next->opcode == LIT2 && prog->next->next->opcode == (o | flag_2)) { \
-      prog->literal = prog->literal x prog->next->literal; \
+#define ConstantFolding(target_opcode, c_operator, result_opcode) \
+    if (prog->opcode == LIT2 && prog->next->opcode == LIT2 && prog->next->next->opcode == (target_opcode | flag_2)) { \
+      prog->opcode = result_opcode; \
+      prog->literal = prog->literal c_operator prog->next->literal; \
       prog->next = prog->next->next->next; \
       changed = true; \
       continue; \
     } \
-    if (prog->opcode == LIT && prog->next->opcode == LIT && prog->next->next->opcode == o) { \
-      prog->literal = (unsigned char)prog->literal x (unsigned char)prog->next->literal; \
-      prog->next = prog->next->next->next; \
-      changed = true; \
-      continue; \
-    }
-#define ConstantFoldingComparison(o, x) \
-    if (prog->opcode == LIT2 && prog->next->opcode == LIT2 && prog->next->next->opcode == (o | flag_2)) { \
-      prog->opcode = LIT; /* always one-byte result */ \
-      prog->literal = prog->literal x prog->next->literal; \
-      prog->next = prog->next->next->next; \
-      changed = true; \
-      continue; \
-    } \
-    if (prog->opcode == LIT && prog->next->opcode == LIT && prog->next->next->opcode == o) { \
-      prog->literal = (unsigned char)prog->literal x (unsigned char)prog->next->literal; \
+    if (prog->opcode == LIT && prog->next->opcode == LIT && prog->next->next->opcode == target_opcode) { \
+      prog->literal = (unsigned char)prog->literal c_operator (unsigned char)prog->next->literal; \
       prog->next = prog->next->next->next; \
       changed = true; \
       continue; \
@@ -62,17 +49,17 @@ static bool optimize_pass(Instruction* prog, int stage) {
   bool changed = false;
   while (prog->opcode) {
     if (prog->next && prog->next->next) {
-      ConstantFolding(ADD, +);
-      ConstantFolding(SUB, -);
-      ConstantFolding(MUL, *);
-      ConstantFolding(DIV, /);
-      ConstantFolding(AND, &);
-      ConstantFolding(ORA, |);
-      ConstantFolding(EOR, ^);
-      ConstantFoldingComparison(EQU, ==);
-      ConstantFoldingComparison(NEQ, !=);
-      ConstantFoldingComparison(GTH, >);
-      ConstantFoldingComparison(LTH, <);
+      ConstantFolding(ADD, +, LIT2);
+      ConstantFolding(SUB, -, LIT2);
+      ConstantFolding(MUL, *, LIT2);
+      ConstantFolding(DIV, /, LIT2);
+      ConstantFolding(AND, &, LIT2);
+      ConstantFolding(ORA, |, LIT2);
+      ConstantFolding(EOR, ^, LIT2);
+      ConstantFolding(EQU, ==, LIT);
+      ConstantFolding(NEQ, !=, LIT);
+      ConstantFolding(GTH, >, LIT);
+      ConstantFolding(LTH, <, LIT);
     }
 
     // Fold INC2
