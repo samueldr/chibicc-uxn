@@ -54,9 +54,14 @@ static void gen_lval(Node *node, int depth) {
 
 static void load(Type *ty) {
   if (ty->size == 1) {
-    need_sext_helper = 1;
     op(LDA);
-    jsi("sext");
+    if (ty->is_unsigned) {
+      lit(0x00);
+      op(SWP);
+    } else {
+      need_sext_helper = 1;
+      jsi("sext");
+    }
   } else {
     op(LDA2);
   }
@@ -86,9 +91,14 @@ static void truncate(Type *ty) {
   if (ty->kind == TY_BOOL) {
     fix_bool(ty);
   } else if (ty->size == 1 && ty->kind != TY_VOID) {
-    need_sext_helper = 1;
     op(NIP);
-    jsi("sext");
+    if (ty->is_unsigned) {
+      lit(0x00);
+      op(SWP);
+    } else {
+      need_sext_helper = 1;
+      jsi("sext");
+    }
   }
 }
 
@@ -135,15 +145,23 @@ static void gen_binary(Node *node) {
     break;
   case ND_DIV:
   case ND_DIV_EQ:
-    need_sdiv_helper = true;
-    jsi("sdiv");
+    if (uac(node->lhs->ty, node->rhs->ty)->is_unsigned) {
+      op(DIV2);
+    } else {
+      need_sdiv_helper = true;
+      jsi("sdiv");
+    }
     break;
   case ND_MOD:
   case ND_MOD_EQ:
-    need_sdiv_helper = true;
     op(OVR2);
     op(OVR2);
-    jsi("sdiv");
+    if (uac(node->lhs->ty, node->rhs->ty)->is_unsigned) {
+      op(DIV2);
+    } else {
+      need_sdiv_helper = true;
+      jsi("sdiv");
+    }
     op(MUL2);
     op(SUB2);
     break;
@@ -168,8 +186,15 @@ static void gen_binary(Node *node) {
     break;
   case ND_SHR:
   case ND_SHR_EQ:
-    need_ashr_helper = 1;
-    jsi("ashr");
+    if (promote(node->lhs->ty)->is_unsigned) {
+      op(NIP);
+      lit(0x0f);
+      op(AND);
+      op(SFT2);
+    } else {
+      need_ashr_helper = 1;
+      jsi("ashr");
+    }
     break;
   case ND_EQ:
     op(EQU2);
@@ -581,23 +606,33 @@ static void gen(Node *node, int depth) {
     truncate(node->ty);
     return;
   case ND_LT:
-    gen(node->lhs, depth);
-    lit2(0x8000);
-    op(EOR2);
-    gen(node->rhs, depth + 2);
-    lit2(0x8000);
-    op(EOR2);
+    if (uac(node->lhs->ty, node->rhs->ty)->is_unsigned) {
+      gen(node->lhs, depth);
+      gen(node->rhs, depth + 2);
+    } else {
+      gen(node->lhs, depth);
+      lit2(0x8000);
+      op(EOR2);
+      gen(node->rhs, depth + 2);
+      lit2(0x8000);
+      op(EOR2);
+    }
     op(LTH2);
     lit(0);
     op(SWP);
     return;
   case ND_LE:
-    gen(node->lhs, depth);
-    lit2(0x8000);
-    op(EOR2);
-    gen(node->rhs, depth + 2);
-    lit2(0x8000);
-    op(EOR2);
+    if (uac(node->lhs->ty, node->rhs->ty)->is_unsigned) {
+      gen(node->lhs, depth);
+      gen(node->rhs, depth + 2);
+    } else {
+      gen(node->lhs, depth);
+      lit2(0x8000);
+      op(EOR2);
+      gen(node->rhs, depth + 2);
+      lit2(0x8000);
+      op(EOR2);
+    }
     op(GTH2);
     lit(0);
     op(SWP);

@@ -274,6 +274,7 @@ static Type *basetype(StorageClass *sclass) {
     //LONG   = 1 << 10,
     OTHER  = 1 << 12,
     SIGNED = 1 << 13,
+    UNSIGNED = 1 << 14,
   };
 
   Type *ty = int_type;
@@ -305,7 +306,7 @@ static Type *basetype(StorageClass *sclass) {
     // Handle user-defined types.
     if (!peek("void") && !peek("_Bool") && !peek("char") &&
         !peek("short") && !peek("int") && //!peek("long") &&
-        !peek("signed")) {
+        !peek("signed") && !peek("unsigned")) {
       if (counter)
         break;
 
@@ -338,6 +339,8 @@ static Type *basetype(StorageClass *sclass) {
     //  counter += LONG;
     else if (consume("signed"))
       counter |= SIGNED;
+    else if (consume("unsigned"))
+      counter |= UNSIGNED;
 
     switch (counter) {
     case VOID:
@@ -350,16 +353,27 @@ static Type *basetype(StorageClass *sclass) {
     case SIGNED + CHAR:
       ty = char_type;
       break;
+    case UNSIGNED + CHAR:
+      ty = uchar_type;
+      break;
     case SHORT:
     case SHORT + INT:
     case SIGNED + SHORT:
     case SIGNED + SHORT + INT:
       ty = short_type;
       break;
+    case UNSIGNED + SHORT:
+    case UNSIGNED + SHORT + INT:
+      ty = ushort_type;
+      break;
     case INT:
     case SIGNED:
     case SIGNED + INT:
       ty = int_type;
+      break;
+    case UNSIGNED:
+    case UNSIGNED + INT:
+      ty = uint_type;
       break;
     //case LONG:
     //case LONG + INT:
@@ -370,6 +384,12 @@ static Type *basetype(StorageClass *sclass) {
     //case SIGNED + LONG + LONG:
     //case SIGNED + LONG + LONG + INT:
     //  ty = long_type;
+    //  break;
+    //case UNSIGNED + LONG:
+    //case UNSIGNED + LONG + INT:
+    //case UNSIGNED + LONG + LONG:
+    //case UNSIGNED + LONG + LONG + INT:
+    //  ty = ulong_type;
     //  break;
     default:
       error_tok(tok, "invalid type");
@@ -1133,7 +1153,7 @@ static bool is_typename(void) {
   return peek("void") || peek("_Bool") || peek("char") || peek("short") ||
          peek("int") || /*peek("long") ||*/ peek("enum") || peek("struct") ||
          peek("typedef") || peek("static") || peek("extern") ||
-         peek("signed") || find_typedef(token);
+         peek("signed") || peek("unsigned") || find_typedef(token);
 }
 
 static Node *stmt(void) {

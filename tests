@@ -893,6 +893,53 @@ void main() {
   assert(3, 3 % -5, "3 % -5");
   assert(-3, -3 % -5, "-3 % -5");
 
+  // Basic unsigned integer tests
+  assert(1, sizeof(unsigned char), "sizeof(unsigned char)");
+  assert(1, sizeof(unsigned char) == sizeof(signed char), "sizeof(unsigned char) == sizeof(signed char)");
+  assert(2, sizeof(unsigned short), "sizeof(unsigned short)");
+  assert(1, sizeof(unsigned short) == sizeof(signed short), "sizeof(unsigned short) == sizeof(signed short)");
+  assert(2, sizeof(unsigned int), "sizeof(unsigned int)");
+  assert(1, sizeof(unsigned int) == sizeof(signed int), "sizeof(unsigned int) == sizeof(signed int)");
+  assert(1, sizeof(1u) == sizeof(unsigned int), "sizeof(1u) == sizeof(unsigned int)");
+  assert(1, sizeof(1U) == sizeof(unsigned int), "sizeof(1U) == sizeof(unsigned int)");
+
+  // Zero extension tests
+  assert(0xff, (unsigned char)-1, "(unsigned char)-1");
+  assert(0xff, (int)(unsigned char)-1, "(int)(unsigned char)-1");
+  assert(0xff, ({ unsigned char c = -1; c; }), "unsigned char c = -1; c;");
+  assert(0xff, ({ unsigned char c = -1; (int)c; }), "unsigned char c = -1; (int)c;");
+
+  // C standard "usual arithmetic conversions" and "integer promotions"
+  // (and unsigned right shift and division)
+  assert(-1, ((unsigned char)0 - (unsigned char)1) >> 1, "((unsigned char)0 - (unsigned char)1) >> 1");
+  assert(0, ((unsigned char)0 - (unsigned char)1) / 2, "((unsigned char)0 - (unsigned char)1) / 2");
+  assert(-1, ((unsigned char)0 - 1) >> 1, "((unsigned char)0 - 1) >> 1");
+  assert(0, ((unsigned char)0 - 1) / 2, "((unsigned char)0 - 1) / 2");
+  assert(-1, (0 - (unsigned char)1) >> 1, "(0 - (unsigned char)1) >> 1");
+  assert(0, (0 - (unsigned char)1) / 2, "(0 - (unsigned char)1) / 2");
+  assert(0x7fff, ((unsigned)0 - (unsigned)1) >> 1, "((unsigned)0 - (unsigned)1) >> 1");
+  assert(0x7fff, ((unsigned)0 - (unsigned)1) / 2, "((unsigned)0 - (unsigned)1) / 2");
+  assert(0x7fff, ((unsigned)0 - (unsigned char)1) >> 1, "((unsigned)0 - (unsigned char)1) >> 1");
+  assert(0x7fff, ((unsigned)0 - (unsigned char)1) / 2, "((unsigned)0 - (unsigned char)1) / 2");
+  assert(0x7fff, ((unsigned char)0 - (unsigned)1) >> 1, "((unsigned char)0 - (unsigned)1) >> 1");
+  assert(0x7fff, ((unsigned char)0 - (unsigned)1) / 2, "((unsigned char)0 - (unsigned)1) / 2");
+  assert(0x7fff, (0u - 1u) >> 1, "(0u - 1u) >> 1");
+  assert(0x7fff, (0u - 1u) / 2, "(0u - 1u) / 2");
+  assert(0x7fff, (0u - 1) >> 1, "(0u - 1) >> 1");
+  assert(0x7fff, (0u - 1) / 2, "(0u - 1) / 2");
+  assert(0x7fff, (0 - 1u) >> 1, "(0 - 1u) >> 1");
+  assert(0x7fff, (0 - 1u) / 2, "(0 - 1u) / 2");
+
+  // Unsigned comparison (and "usual arithmetic conversions")
+  assert(1, 0 < (unsigned)-1, "0 < (unsigned)-1");
+  assert(0, (unsigned)-1 < (unsigned)-1, "(unsigned)-1 < (unsigned)-1");
+  assert(1, 0 <= (unsigned)-1, "0 <= (unsigned)-1");
+  assert(1, (unsigned)-1 <= (unsigned)-1, "(unsigned)-1 <= (unsigned)-1");
+  assert(0, 0 > (unsigned)-1, "0 > (unsigned)-1");
+  assert(0, (unsigned)-1 > (unsigned)-1, "(unsigned)-1 > (unsigned)-1");
+  assert(0, 0 >= (unsigned)-1, "0 >= (unsigned)-1");
+  assert(1, (unsigned)-1 >= (unsigned)-1, "(unsigned)-1 >= (unsigned)-1");
+
   print("All tests passed!\n");
   exit(0);
 }

@@ -61,7 +61,9 @@ See also `make test`, which runs a test suite.
 
 ## Details
 
-Integers are either 8-bit (`char`) or 16-bit (`short` or `int`); there is no `long` or `long long`. Currently there are only signed integers. Uxn only provides unsigned integer operations, so the following signed operations have to be emulated with helper functions: sign extension (`char` to `int` conversion), comparison, arithmetic right shift and division/modulo. These last two are particularly expensive. TODO: add unsigned types as an alternative.
+Integers are either 8-bit (`char`) or 16-bit (`short` or `int`); there is no `long` or `long long`. There are both signed and unsigned integers. `char` is signed.
+
+Uxn only provides unsigned integer operations, so some signed operations have to be emulated with helper routines: sign extension (`char` to `int` conversion), comparison, arithmetic right shift and division/modulo. These last two are particularly expensive. For optimal code size and performance, you may want to limit your use of signed integers. Beware that `(unsigned char)a / (unsigned char)b` is a _signed_ operation due to C's integer promotion rules, and this applies to all the binary operators: at least one of the operands must be `unsigned int`, not `unsigned char`, for the result to be unsigned. For bitwise shifts, only the left-hand side counts.
 
 There are no floats. Arrays, structs, and enums are supported.
 

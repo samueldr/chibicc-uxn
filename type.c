@@ -1,11 +1,15 @@
 #include "chibi.h"
 
-Type *void_type  = &(Type){ TY_VOID, 1, 1 };
-Type *bool_type  = &(Type){ TY_BOOL, 1, 1 };
-Type *char_type  = &(Type){ TY_CHAR, 1, 1 };
-Type *short_type = &(Type){ TY_SHORT, 2, 2 };
-Type *int_type   = &(Type){ TY_INT, 2, 2 };
-//Type *long_type  = &(Type){ TY_LONG, 4, 4 };
+Type *void_type  = &(Type){ TY_VOID, 1, 1, 0 };
+Type *bool_type  = &(Type){ TY_BOOL, 1, 1, 0 };
+Type *char_type  = &(Type){ TY_CHAR, 1, 1, 0 };
+Type *uchar_type  = &(Type){ TY_CHAR, 1, 1, 1 };
+Type *short_type = &(Type){ TY_SHORT, 2, 2, 0 };
+Type *ushort_type = &(Type){ TY_SHORT, 2, 2, 1 };
+Type *int_type   = &(Type){ TY_INT, 2, 2, 0 };
+Type *uint_type  = &(Type){ TY_INT, 2, 2, 1 };
+//Type *long_type  = &(Type){ TY_LONG, 4, 4, 0 };
+//Type *ulong_type  = &(Type){ TY_LONG, 4, 4, 1 };
 
 bool is_integer(Type *ty) {
   TypeKind k = ty->kind;
@@ -54,6 +58,28 @@ Type *struct_type(void) {
   return ty;
 }
 
+// implements the C standard "integer promotions"
+// (only handles type ranks <= int because we don't have long etc)
+Type *promote(Type *type) {
+  // everything smaller than int is promoted to signed int, even unsigned types
+  if (type->kind < TY_INT) {
+    return int_type;
+  } else {
+    return type;
+  }
+}
+// implements the C standard "usual arithmetic conversions"
+// (only handles type ranks <= int because we don't have long etc)
+Type *uac(Type *type1, Type *type2) {
+  type1 = promote(type1);
+  type2 = promote(type2);
+  if (type1->is_unsigned || type2->is_unsigned) {
+    return uint_type;
+  } else {
+    return int_type;
+  }
+}
+
 void add_type(Node *node) {
   if (!node || node->ty)
     return;
@@ -72,30 +98,34 @@ void add_type(Node *node) {
     add_type(n);
 
   switch (node->kind) {
+  case ND_PTR_DIFF:
+  case ND_LOGOR:
+  case ND_LOGAND:
+  case ND_NOT:
+  case ND_EQ:
+  case ND_NE:
+  case ND_LT:
+  case ND_LE:
+    node->ty = int_type;
+    return;
   case ND_ADD:
   case ND_SUB:
-  case ND_PTR_DIFF:
   case ND_MUL:
   case ND_DIV:
   case ND_MOD:
   case ND_BITAND:
   case ND_BITOR:
   case ND_BITXOR:
-  case ND_EQ:
-  case ND_NE:
-  case ND_LT:
-  case ND_LE:
-  case ND_NOT:
-  case ND_LOGOR:
-  case ND_LOGAND:
-    //node->ty = long_type;
-    node->ty = int_type;
+    node->ty = uac(node->lhs->ty, node->rhs->ty);
+    return;
+  case ND_SHL:
+  case ND_SHR:
+  case ND_BITNOT:
+    node->ty = promote(node->lhs->ty);
     return;
   case ND_PTR_ADD:
   case ND_PTR_SUB:
   case ND_ASSIGN:
-  case ND_SHL:
-  case ND_SHR:
   case ND_PRE_INC:
   case ND_PRE_DEC:
   case ND_POST_INC:
@@ -112,14 +142,16 @@ void add_type(Node *node) {
   case ND_BITAND_EQ:
   case ND_BITOR_EQ:
   case ND_BITXOR_EQ:
-  case ND_BITNOT:
     node->ty = node->lhs->ty;
     return;
   case ND_VAR:
     node->ty = node->var->ty;
     return;
   case ND_TERNARY:
-    node->ty = node->then->ty;
+    if (is_integer(node->then->ty))
+      node->ty = uac(node->then->ty, node->els->ty);
+    else
+      node->ty = node->then->ty;
     return;
   case ND_COMMA:
     node->ty = node->rhs->ty;

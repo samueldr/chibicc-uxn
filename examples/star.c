@@ -101,8 +101,8 @@ void on_screen(void)
   _Bool first = 1;
   int last_x;
   int last_y;
-  for (int i = 0; i < 11; i++) {
-    int angle = t + (256 * (i % 10)) / 10;
+  for (unsigned i = 0; i < 11; i++) {
+    unsigned char angle = t + (256 * (i % 10)) / 10;
     int x = sin(angle) >> (i & 1);
     int y = cos(angle) >> (i & 1);
     if (first) {

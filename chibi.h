@@ -252,6 +252,7 @@ struct Type {
   TypeKind kind;
   int size;           // sizeof() value
   int align;          // alignment
+  bool is_unsigned;   // unsignedness (integers only)
   bool is_incomplete; // incomplete type
 
   Type *base;         // pointer or array
@@ -272,9 +273,13 @@ struct Member {
 extern Type *void_type;
 extern Type *bool_type;
 extern Type *char_type;
+extern Type *uchar_type;
 extern Type *short_type;
+extern Type *ushort_type;
 extern Type *int_type;
+extern Type *uint_type;
 //extern Type *long_type;
+//extern Type *ulong_type;
 
 bool is_integer(Type *ty);
 int align_to(int n, int align);
@@ -283,6 +288,8 @@ Type *array_of(Type *base, int size);
 Type *func_type(Type *return_ty);
 Type *enum_type(void);
 Type *struct_type(void);
+Type *promote(Type *type);
+Type *uac(Type *type1, Type *type2);
 void add_type(Node *node);
 
 //

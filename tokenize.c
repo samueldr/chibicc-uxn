@@ -146,7 +146,7 @@ static char *starts_with_reserved(char *p) {
                        "char", "sizeof", "struct", "typedef", "short",
                        "long", "void", "_Bool", "enum", "static", "break",
                        "continue", "goto", "switch", "case", "default",
-                       "extern", "_Alignof", "do", "signed"};
+                       "extern", "_Alignof", "do", "signed", "unsigned"};
 
   for (int i = 0; i < sizeof(kw) / sizeof(*kw); i++) {
     int len = strlen(kw[i]);
@@ -264,6 +264,9 @@ static Token *read_int_literal(Token *cur, char *start) {
     //ty = long_type;
   //} else if (val != (int)val) {
   //  ty = long_type;
+  } else if (*p == 'U' || *p == 'u') {
+    ty = uint_type;
+    p++;
   } else if (val != (short)val && val != (unsigned short)val) {
     error_tok(cur, "integer literal is too large for type int (16-bit)");
   }
