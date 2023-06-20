@@ -940,6 +940,10 @@ void main() {
   assert(0, 0 >= (unsigned)-1, "0 >= (unsigned)-1");
   assert(1, (unsigned)-1 >= (unsigned)-1, "(unsigned)-1 >= (unsigned)-1");
 
+  // Pointer diffs must use signed division
+  // (they are evaluated like ((char*)a - (char*)b) / sizeof(*a))
+  assert(-3, ({ int a[4]; int *b = &a[3]; int *c = &a[0]; c - b; }), "int a[4]; int *b = &a[3]; int *c = &a[0]; c - b;");
+
   print("All tests passed!\n");
   exit(0);
 }

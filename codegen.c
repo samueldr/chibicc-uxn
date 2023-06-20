@@ -137,7 +137,8 @@ static void gen_binary(Node *node) {
   case ND_PTR_DIFF:
     op(SUB2);
     lit2(node->lhs->ty->base->size);
-    op(DIV2);
+    need_sdiv_helper = true;
+    jsi("sdiv");
     break;
   case ND_MUL:
   case ND_MUL_EQ:
