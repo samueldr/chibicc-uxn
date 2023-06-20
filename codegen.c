@@ -8,7 +8,7 @@ static bool need_sext_helper;
 static bool need_ashr_helper;
 static bool need_sdiv_helper;
 
-static void gen(Node *node);
+static void gen(Node *node, int depth);
 
 static void emit_add(int n) {
   if (n != 0) {
@@ -18,11 +18,11 @@ static void emit_add(int n) {
 }
 
 // Pushes the given node's address to the stack.
-static void gen_addr(Node *node) {
+static void gen_addr(Node *node, int depth) {
   switch (node->kind) {
   case ND_VAR: {
     if (node->init)
-      gen(node->init);
+      gen(node->init, depth);
 
     Var *var = node->var;
     if (var->is_local) {
@@ -34,10 +34,10 @@ static void gen_addr(Node *node) {
     return;
   }
   case ND_DEREF:
-    gen(node->lhs);
+    gen(node->lhs, depth);
     return;
   case ND_MEMBER:
-    gen_addr(node->lhs);
+    gen_addr(node->lhs, depth);
     emit_add(node->member->offset);
     return;
   default:
@@ -46,10 +46,10 @@ static void gen_addr(Node *node) {
   }
 }
 
-static void gen_lval(Node *node) {
+static void gen_lval(Node *node, int depth) {
   if (node->ty->kind == TY_ARRAY)
     error_tok(node->tok, "not an lvalue");
-  gen_addr(node);
+  gen_addr(node, depth);
 }
 
 static void load(Type *ty) {
@@ -186,15 +186,16 @@ static void gen_binary(Node *node) {
   }
 }
 
-void args_backwards(Node *node) {
+int args_backwards(Node *node, int depth) {
   if (node->next) {
-    args_backwards(node->next);
+    depth = args_backwards(node->next, depth);
   }
-  gen(node);
+  gen(node, depth);
+  return depth + 2;
 }
 
 // Generate code for a given node.
-static void gen(Node *node) {
+static void gen(Node *node, int depth) {
   switch (node->kind) {
   case ND_NULL:
     return;
@@ -202,42 +203,42 @@ static void gen(Node *node) {
     lit2(node->val);
     return;
   case ND_EXPR_STMT:
-    gen(node->lhs);
+    gen(node->lhs, depth);
     op(POP2);
     return;
   case ND_VAR:
     if (node->init)
-      gen(node->init);
-    gen_addr(node);
+      gen(node->init, depth);
+    gen_addr(node, depth);
     if (node->ty->kind != TY_ARRAY)
       load(node->ty);
     return;
   case ND_MEMBER:
-    gen_addr(node);
+    gen_addr(node, depth);
     if (node->ty->kind != TY_ARRAY)
       load(node->ty);
     return;
   case ND_ASSIGN:
-    gen(node->rhs);
+    gen(node->rhs, depth);
     fix_bool(node->ty);
-    gen_lval(node->lhs);
+    gen_lval(node->lhs, depth + 2);
     store(node->ty);
     return;
   case ND_TERNARY: {
     int seq = labelseq++;
-    gen(node->cond);
+    gen(node->cond, depth);
     lit2(0);
     op(EQU2);
     jci("L.else.%d", seq);
-    gen(node->then);
+    gen(node->then, depth);
     jmi("L.end.%d", seq);
     at("L.else.%d", seq);
-    gen(node->els);
+    gen(node->els, depth);
     at("L.end.%d", seq);
     return;
   }
   case ND_PRE_INC:
-    gen_lval(node->lhs);
+    gen_lval(node->lhs, depth);
     op(DUP2);
     load(node->ty);
     inc(node->ty);
@@ -246,7 +247,7 @@ static void gen(Node *node) {
     store(node->ty);
     return;
   case ND_PRE_DEC:
-    gen_lval(node->lhs);
+    gen_lval(node->lhs, depth);
     op(DUP2);
     load(node->ty);
     dec(node->ty);
@@ -255,7 +256,7 @@ static void gen(Node *node) {
     store(node->ty);
     return;
   case ND_POST_INC:
-    gen_lval(node->lhs);
+    gen_lval(node->lhs, depth);
     op(DUP2);
     load(node->ty);
     op(DUP2);
@@ -266,7 +267,7 @@ static void gen(Node *node) {
     op(POP2);
     return;
   case ND_POST_DEC:
-    gen_lval(node->lhs);
+    gen_lval(node->lhs, depth);
     op(DUP2);
     load(node->ty);
     op(DUP2);
@@ -287,46 +288,46 @@ static void gen(Node *node) {
   case ND_BITAND_EQ:
   case ND_BITOR_EQ:
   case ND_BITXOR_EQ:
-    gen_lval(node->lhs);
+    gen_lval(node->lhs, depth);
     op(DUP2);
     load(node->lhs->ty);
-    gen(node->rhs);
+    gen(node->rhs, depth + 4);
     gen_binary(node);
     fix_bool(node->ty);
     op(SWP2);
     store(node->ty);
     return;
   case ND_COMMA:
-    gen(node->lhs);
-    gen(node->rhs);
+    gen(node->lhs, depth);
+    gen(node->rhs, depth);
     return;
   case ND_ADDR:
-    gen_addr(node->lhs);
+    gen_addr(node->lhs, depth);
     return;
   case ND_DEREF:
-    gen(node->lhs);
+    gen(node->lhs, depth);
     if (node->ty->kind != TY_ARRAY)
       load(node->ty);
     return;
   case ND_NOT:
-    gen(node->lhs);
+    gen(node->lhs, depth);
     lit2(0);
     op(EQU2);
     lit(0);
     op(SWP);
     return;
   case ND_BITNOT:
-    gen(node->lhs);
+    gen(node->lhs, depth);
     lit2(0xffff);
     op(EOR2);
     return;
   case ND_LOGAND: {
     int seq = labelseq++;
-    gen(node->lhs);
+    gen(node->lhs, depth);
     lit2(0);
     op(EQU2);
     jci("L.false.%d", seq);
-    gen(node->rhs);
+    gen(node->rhs, depth);
     lit2(0);
     op(EQU2);
     jci("L.false.%d", seq);
@@ -339,10 +340,10 @@ static void gen(Node *node) {
   }
   case ND_LOGOR: {
     int seq = labelseq++;
-    gen(node->lhs);
+    gen(node->lhs, depth);
     op(ORA);
     jci("L.true.%d", seq);
-    gen(node->rhs);
+    gen(node->rhs, depth);
     op(ORA);
     jci("L.true.%d", seq);
     lit2(0);
@@ -355,21 +356,21 @@ static void gen(Node *node) {
   case ND_IF: {
     int seq = labelseq++;
     if (node->els) {
-      gen(node->cond);
+      gen(node->cond, depth);
       lit2(0);
       op(EQU2);
       jci("L.else.%d", seq);
-      gen(node->then);
+      gen(node->then, depth);
       jmi("L.end.%d", seq);
       at("L.else.%d", seq);
-      gen(node->els);
+      gen(node->els, depth);
       at("L.end.%d", seq);
     } else {
-      gen(node->cond);
+      gen(node->cond, depth);
       lit2(0);
       op(EQU2);
       jci("L.end.%d", seq);
-      gen(node->then);
+      gen(node->then, depth);
       at("L.end.%d", seq);
     }
     return;
@@ -382,12 +383,12 @@ static void gen(Node *node) {
 
     at("L.continue.%d", seq);
 
-    gen(node->cond);
+    gen(node->cond, depth);
     lit2(0);
     op(EQU2);
     jci("L.break.%d", seq);
 
-    gen(node->then);
+    gen(node->then, depth);
     jmi("L.continue.%d", seq);
     at("L.break.%d", seq);
 
@@ -402,18 +403,18 @@ static void gen(Node *node) {
     brkseq = contseq = seq;
 
     if (node->init)
-      gen(node->init);
+      gen(node->init, depth);
     at("L.begin.%d", seq);
     if (node->cond) {
-      gen(node->cond);
+      gen(node->cond, depth);
       lit2(0);
       op(EQU2);
       jci("L.break.%d", seq);
     }
-    gen(node->then);
+    gen(node->then, depth);
     at("L.continue.%d", seq);
     if (node->inc)
-      gen(node->inc);
+      gen(node->inc, depth);
     jmi("L.begin.%d", seq);
     at("L.break.%d", seq);
 
@@ -428,9 +429,9 @@ static void gen(Node *node) {
     brkseq = contseq = seq;
 
     at("L.begin.%d", seq);
-    gen(node->then);
+    gen(node->then, depth);
     at("L.continue.%d", seq);
-    gen(node->cond);
+    gen(node->cond, depth);
     lit2(0);
     op(NEQ2);
     jci("L.begin.%d", seq);
@@ -446,7 +447,7 @@ static void gen(Node *node) {
     brkseq = seq;
     node->case_label = seq;
 
-    gen(node->cond);
+    gen(node->cond, depth);
 
     for (Node *n = node->case_next; n; n = n->case_next) {
       n->case_label = labelseq++;
@@ -465,7 +466,7 @@ static void gen(Node *node) {
     }
 
     jmi("L.break.%d", seq);
-    gen(node->then);
+    gen(node->then, depth + 2);
     at("L.break.%d", seq);
     op(POP2);
 
@@ -474,12 +475,12 @@ static void gen(Node *node) {
   }
   case ND_CASE:
     at("L.case.%d", node->case_label);
-    gen(node->lhs);
+    gen(node->lhs, depth);
     return;
   case ND_BLOCK:
   case ND_STMT_EXPR:
     for (Node *n = node->body; n; n = n->next)
-      gen(n);
+      gen(n, depth);
     return;
   case ND_BREAK:
     if (brkseq == 0)
@@ -496,28 +497,28 @@ static void gen(Node *node) {
     return;
   case ND_LABEL:
     at("L.label.%s.%s", funcname, node->label_name);
-    gen(node->lhs);
+    gen(node->lhs, depth);
     return;
   case ND_FUNCALL: {
     if (!strcmp(node->funcname, "deo")) {
-      gen(node->args);
+      gen(node->args, depth);
       op(NIP);
-      gen(node->args->next);
+      gen(node->args->next, depth + 1);
       op(NIP);
       op(DEO);
       lit2(0); // Will be followed by POP2
       return;
     }
     if (!strcmp(node->funcname, "deo2")) {
-      gen(node->args);
-      gen(node->args->next);
+      gen(node->args, depth);
+      gen(node->args->next, depth + 2);
       op(NIP);
       op(DEO2);
       lit2(0); // Will be followed by POP2
       return;
     }
     if (!strcmp(node->funcname, "dei")) {
-      gen(node->args);
+      gen(node->args, depth);
       op(NIP);
       op(DEI);
       lit(0);
@@ -525,13 +526,13 @@ static void gen(Node *node) {
       return;
     }
     if (!strcmp(node->funcname, "dei2")) {
-      gen(node->args);
+      gen(node->args, depth);
       op(NIP);
       op(DEI2);
       return;
     }
     if (!strcmp(node->funcname, "exit")) {
-      gen(node->args);
+      gen(node->args, depth);
       op(NIP);
       lit(0x80);
       op(ORA);
@@ -540,35 +541,50 @@ static void gen(Node *node) {
       op(BRK);
       return;
     }
-    if (!strcmp(node->funcname, "__builtin_va_start")) {
-      error("unsupported __builtin_va_start");
+    if (!strcmp(node->funcname, "__builtin_va_arg")) {
+      // fprintf(stderr, "depth=%d\n", depth);
+      if (depth % 2) {
+        error_tok(node->tok, "bad va_arg depth");
+        return;
+      } else if (depth == 0) {
+        // nothing
+      } else if (depth == 2) {
+        op(SWP2);
+      } else {
+        int i;
+        for (i = 4; i < depth; i += 2)
+          op(STH2);
+        op(ROT2);
+        for (; i > 4; i -= 2)
+          op(STH2 | flag_r), op(SWP2);
+      }
       return;
     }
 
     // Function arguments are passed via the uxn working stack.
     if (node->args)
-      args_backwards(node->args);
+      args_backwards(node->args, depth);
 
     jsi("%s_", node->funcname);
     return;
   }
   case ND_RETURN:
     if (node->lhs) {
-      gen(node->lhs);
+      gen(node->lhs, depth);
     } else {
       lit2(0); // dummy return value
     }
     jmi("L.return.%s", funcname);
     return;
   case ND_CAST:
-    gen(node->lhs);
+    gen(node->lhs, depth);
     truncate(node->ty);
     return;
   case ND_LT:
-    gen(node->lhs);
+    gen(node->lhs, depth);
     lit2(0x8000);
     op(EOR2);
-    gen(node->rhs);
+    gen(node->rhs, depth + 2);
     lit2(0x8000);
     op(EOR2);
     op(LTH2);
@@ -576,10 +592,10 @@ static void gen(Node *node) {
     op(SWP);
     return;
   case ND_LE:
-    gen(node->lhs);
+    gen(node->lhs, depth);
     lit2(0x8000);
     op(EOR2);
-    gen(node->rhs);
+    gen(node->rhs, depth + 2);
     lit2(0x8000);
     op(EOR2);
     op(GTH2);
@@ -589,7 +605,8 @@ static void gen(Node *node) {
     op(EOR);
     return;
 
-  // These are commutative, so we'll move literals to the right for the optimizer.
+  // These are commutative, so we'll move literals to the right for the
+  // optimizer.
   case ND_ADD:
   case ND_MUL:
   case ND_BITAND:
@@ -598,16 +615,16 @@ static void gen(Node *node) {
   case ND_EQ:
   case ND_NE:
     if (node->lhs->kind == ND_NUM) {
-      gen(node->rhs);
-      gen(node->lhs);
+      gen(node->rhs, depth);
+      gen(node->lhs, depth + 2);
       gen_binary(node);
       return;
     }
     // Else, fall through
 
   default: // Binary operations
-    gen(node->lhs);
-    gen(node->rhs);
+    gen(node->lhs, depth);
+    gen(node->rhs, depth + 2);
     gen_binary(node);
   }
 }
@@ -721,7 +738,7 @@ static void emit_text(Program *prog) {
 
     // Save arg registers if function is variadic
     if (fn->has_varargs) {
-      error("unsupported varargs");
+      // error("unsupported varargs");
     }
 
     // Push arguments to the in-memory stack from the uxn working stack
@@ -730,7 +747,7 @@ static void emit_text(Program *prog) {
 
     // Emit code
     for (Node *node = fn->node; node; node = node->next)
-      gen(node);
+      gen(node, 0);
 
     // Epilogue
     lit2(0); // dummy return value
