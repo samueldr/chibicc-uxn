@@ -208,6 +208,8 @@ static bool optimize_pass(Instruction* prog, int stage) {
         && prog->next->next->next->next && prog->next->next->next->next->opcode == EQU2) {
       prog->opcode = NEQ2;
       prog->next = prog->next->next->next->next->next;
+      changed = true;
+      continue;
     }
 
     // #00 SWP #0000 EQU2 ? -> #00 EQU ?
@@ -218,6 +220,8 @@ static bool optimize_pass(Instruction* prog, int stage) {
         && prog->next->next->next->next->opcode == JCI) {
       prog->next->opcode = EQU;
       prog->next->next = prog->next->next->next->next;
+      changed = true;
+      continue;
     }
 
     // sext #0000 NEQ2 ? -> ?
@@ -226,6 +230,8 @@ static bool optimize_pass(Instruction* prog, int stage) {
         && prog->next->next && prog->next->next->opcode == NEQ2
         && prog->next->next->next->opcode == JCI) {
       memcpy(prog, prog->next->next->next, sizeof(Instruction));
+      changed = true;
+      continue;
     // same with zext (#00 SWP)
     } else if (prog->opcode == LIT && prog->literal == 0
         && prog->next && prog->next->opcode == SWP
@@ -233,6 +239,8 @@ static bool optimize_pass(Instruction* prog, int stage) {
         && prog->next->next->next && prog->next->next->next->opcode == NEQ2
         && prog->next->next->next->next->opcode == JCI) {
       memcpy(prog, prog->next->next->next->next, sizeof(Instruction));
+      changed = true;
+      continue;
     }
 
     // #0000 NEQ2 ? -> ORA ?
@@ -241,6 +249,8 @@ static bool optimize_pass(Instruction* prog, int stage) {
         && prog->next->next && prog->next->next->opcode == JCI) {
       prog->opcode = ORA;
       prog->next = prog->next->next;
+      changed = true;
+      continue;
     }
 
     // sext #00xx AND2 -> #xx AND #00 SWP
@@ -256,6 +266,8 @@ static bool optimize_pass(Instruction* prog, int stage) {
       new->opcode = SWP;
       new->next = prog->next->next->next;
       prog->next->next->next = new;
+      changed = true;
+      continue;
     // ditto with zext (#00 SWP)
     } else if (prog->opcode == LIT && prog->literal == 0
         && prog->next && prog->next->opcode == SWP
@@ -267,6 +279,8 @@ static bool optimize_pass(Instruction* prog, int stage) {
       prog->next->next->opcode = LIT;
       prog->next->next->literal = 0;
       prog->next->next->next->opcode = SWP;
+      changed = true;
+      continue;
     }
 
     prog = prog->next;
