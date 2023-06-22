@@ -220,8 +220,14 @@ static bool optimize_pass(Instruction* prog, int stage) {
       prog->next->next = prog->next->next->next->next;
     }
 
-    // #00 SWP #0000 NEQ2 ? -> ?
-    if (prog->opcode == LIT && prog->literal == 0
+    // sext #0000 NEQ2 ? -> ?
+    if (prog->opcode == JSI && !strcmp("sext", prog->label)
+        && prog->next && prog->next->opcode == LIT2 && prog->literal == 0
+        && prog->next->next && prog->next->next->opcode == NEQ2
+        && prog->next->next->next->opcode == JCI) {
+      memcpy(prog, prog->next->next->next, sizeof(Instruction));
+    // same with zext (#00 SWP)
+    } else if (prog->opcode == LIT && prog->literal == 0
         && prog->next && prog->next->opcode == SWP
         && prog->next->next && prog->next->next->opcode == LIT2 && prog->literal == 0
         && prog->next->next->next && prog->next->next->next->opcode == NEQ2
