@@ -254,12 +254,12 @@ static void gen(Node *node, int depth) {
     int seq = labelseq++;
     gen(node->cond, depth);
     lit2(0);
-    op(EQU2);
-    jci("&else.%d", seq);
-    gen(node->then, depth);
-    jmi("&end.%d", seq);
-    at("&else.%d", seq);
+    op(NEQ2);
+    jci("&then.%d", seq);
     gen(node->els, depth);
+    jmi("&end.%d", seq);
+    at("&then.%d", seq);
+    gen(node->then, depth);
     at("&end.%d", seq);
     return;
   }
@@ -384,12 +384,12 @@ static void gen(Node *node, int depth) {
     if (node->els) {
       gen(node->cond, depth);
       lit2(0);
-      op(EQU2);
-      jci("&else.%d", seq);
-      gen(node->then, depth);
-      jmi("&end.%d", seq);
-      at("&else.%d", seq);
+      op(NEQ2);
+      jci("&then.%d", seq);
       gen(node->els, depth);
+      jmi("&end.%d", seq);
+      at("&then.%d", seq);
+      gen(node->then, depth);
       at("&end.%d", seq);
     } else {
       gen(node->cond, depth);
