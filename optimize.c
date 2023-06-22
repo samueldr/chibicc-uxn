@@ -210,12 +210,48 @@ static bool optimize_pass(Instruction* prog, int stage) {
       prog->next = prog->next->next->next->next->next;
     }
 
+    // #00 SWP #0000 EQU2 ? -> #00 EQU ?
+    if (prog->opcode == LIT && prog->literal == 0
+        && prog->next && prog->next->opcode == SWP
+        && prog->next->next && prog->next->next->opcode == LIT2 && prog->literal == 0
+        && prog->next->next->next && prog->next->next->next->opcode == EQU2
+        && prog->next->next->next->next->opcode == JCI) {
+      prog->next->opcode = EQU;
+      prog->next->next = prog->next->next->next->next;
+    }
+
     // #0000 NEQ2 ? -> ORA ?
     if (prog->opcode == LIT2 && prog->literal == 0
         && prog->next && prog->next->opcode == NEQ2
         && prog->next->next && prog->next->next->opcode == JCI) {
       prog->opcode = ORA;
       prog->next = prog->next->next;
+    }
+
+    // sext #00xx AND2 -> #xx AND #00 SWP
+    if (prog->opcode == JSI && !strcmp("sext", prog->label)
+        && prog->next && prog->next->opcode == LIT2 && !(prog->next->literal & 0xff00)
+        && prog->next->next && prog->next->next->opcode == AND2) {
+      prog->opcode = LIT;
+      prog->literal = prog->next->literal & 0xff;
+      prog->next->opcode = AND;
+      prog->next->next->opcode = LIT;
+      prog->next->next->literal = 0;
+      Instruction *new = calloc(1, sizeof(Instruction));
+      new->opcode = SWP;
+      new->next = prog->next->next->next;
+      prog->next->next->next = new;
+    // ditto with zext (#00 SWP)
+    } else if (prog->opcode == LIT && prog->literal == 0
+        && prog->next && prog->next->opcode == SWP
+        && prog->next->next && prog->next->next->opcode == LIT2 && !(prog->next->next->literal & 0xff00)
+        && prog->next->next->next && prog->next->next->next->opcode == AND2) {
+      prog->opcode = LIT;
+      prog->literal = prog->next->next->literal & 0xff;
+      prog->next->opcode = AND;
+      prog->next->next->opcode = LIT;
+      prog->next->next->literal = 0;
+      prog->next->next->next->opcode = SWP;
     }
 
     prog = prog->next;
