@@ -1,5 +1,7 @@
 #include "chibi.h"
 
+int total_alloc = 0;
+
 int fsize(FILE *fp) {
   long previous = ftell(fp);
   fseek(fp, 0L, SEEK_END);
@@ -50,7 +52,13 @@ int main(int argc, char **argv) {
 
   // Tokenize and parse.
   user_input = read_file(filename);
+  fprintf(stderr, "read_file(): allocated %d bytes\n", total_alloc);
+  total_alloc = 0;
+
   token = tokenize();
+  fprintf(stderr, "tokenize(): allocated %d bytes\n", total_alloc);
+  total_alloc = 0;
+
   Program *prog = program();
 
   // Assign offsets to local variables.
@@ -67,6 +75,7 @@ int main(int argc, char **argv) {
 
   // Traverse the AST to emit assembly.
   codegen(prog, do_opt);
+  fprintf(stderr, "codegen(): allocated %d bytes\n", total_alloc);
 
   return 0;
 }

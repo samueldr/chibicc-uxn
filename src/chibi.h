@@ -11,6 +11,10 @@
 #include <string.h>
 #include <strings.h>
 
+extern int total_alloc;
+#define calloc(n, a) (total_alloc += (n) * (a), calloc(n, a))
+#define malloc(a) (total_alloc += (a), malloc(a))
+
 typedef struct Type Type;
 typedef struct Member Member;
 typedef struct Initializer Initializer;
