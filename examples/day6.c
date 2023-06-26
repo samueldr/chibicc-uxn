@@ -142,7 +142,7 @@ void on_screen(void) {
 }
 
 void main(void) {
-  palette(0x2ce9, 0x01c0, 0x2ce5);
+  set_palette(0x2ce9, 0x01c0, 0x2ce5);
   draw_background();
   left.x = MARGIN;
   right.x = screen_width() - MARGIN - PADDLE_WIDTH;

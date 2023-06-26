@@ -134,6 +134,6 @@ void on_screen(void)
 
 void main(void)
 {
-  palette(0x0aaf, 0x0ffc, 0x0faa);
+  set_palette(0x0aaf, 0x0ffc, 0x0faa);
   set_screen_size(256, 256);
 }

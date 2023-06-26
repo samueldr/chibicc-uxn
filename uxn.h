@@ -23,7 +23,7 @@ typedef struct {
 // https://wiki.xxiivv.com/site/varvara.html
 #define expansion(ptr) deo2(ptr, 0x02)
 #define friend(func) deo2(func, 0x04)
-#define palette(r, g, b) (deo2(r, 0x08), deo2(g, 0x0a), deo2(b, 0x0c))
+#define set_palette(r, g, b) (deo2(r, 0x08), deo2(g, 0x0a), deo2(b, 0x0c))
 #define debug() deo(0x01, 0x0e)
 
 #define console_read() dei(0x12)

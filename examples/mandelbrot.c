@@ -47,7 +47,7 @@ int yy;
 int tmp;
 
 void main(void) {
-  palette(0x08df, 0x12bf, 0x549d);
+  set_palette(0x08df, 0x12bf, 0x549d);
   set_screen_size(320, 288);
   for (x0 = -256; x0 < 64; ++x0) {
     for (y0 = -144; y0 <= 0; ++y0) {
