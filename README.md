@@ -1,44 +1,8 @@
 # chibicc-uxn
 
-This is Rui Ueyama's [chibicc@historical/old](https://github.com/rui314/chibicc/tree/historical/old), retargeted to compile to [Uxn](https://100r.co/site/uxn.html).
+This is Rui Ueyama's [chibicc@historical/old](https://github.com/rui314/chibicc/tree/historical/old), retargeted to compile C to [Uxntal](https://100r.co/site/uxn.html).
 
-```c
-#include <uxn.h>
-
-void on_controller(void) {
-  putchar(controller_key());
-  putchar('\n');
-}
-
-void main() {}
-```
-
-<details>
-  <summary>Output (with optimization)</summary>
-
-```
-|0100
-  ;L.controller.hook #80 DEO2
-  LIT2r 0000 main_ POP2r BRK
-  @L.controller.hook LIT2r 0000 on_controller_ POP2 POP2r BRK
-( bss )
-( data )
-( text )
-
-@on_controller_
-    OVR2r #83 DEI #18 DEO #0a18 DEO #0000
-
-  &return
-    POP2r JMP2r
-
-@main_
-    OVR2r #0000
-
-  &return
-    POP2r JMP2r
-```
-
-</details>
+![image](https://github.com/lynn/chibicc/assets/16232127/312c01e7-0a82-43c0-86ef-6215010cd250)
 
 ## Usage
 
@@ -48,9 +12,9 @@ chibicc itself has no preprocessor, but any C compiler's `-E` flag will do. We u
 
 ```sh
 gcc -I. -P -E examples/day3.c -o tmp.c
-./chibicc -O1 tmp.c > c.tal
-uxnasm c.tal c.rom
-uxnemu c.rom
+./chibicc -O1 tmp.c > tmp.tal
+uxnasm tmp.tal tmp.rom
+uxnemu tmp.rom
 ```
 
 The `-O1` or `-O` flag enables the optimization pass. If the flag is omitted, this is equivalent to `-O0` (no optimization).
@@ -59,22 +23,31 @@ For a more complex and visually interesting demo, try `examples/star.c`.
 
 See also `make test`, which runs a test suite.
 
-## Details
+## Supported
 
-Integers are either 8-bit (`char`) or 16-bit (`short` or `int`); there is no `long` or `long long`. There are both signed and unsigned integers. `char` is signed.
+* Boring C89 stuff: functions, loops, global and local variables, arrays, pointers, structs, enums.
+* `char` (8 bits), `short` (16 bits), `int` (16 bits), `unsigned`.
+* Emulation of signed comparisons, signed division and arithmetic right shift.
+  * But these are slow, so use `unsigned` if you want fast code.
+* Variable argument functions, in a very limited fashion — see `examples/printf.c`.
+* Simple peephole optimizations, like `#0004 MUL2` → `#20 SFT2` or `#0004 0005 ADD2` → `#0009`.
 
-Uxn only provides unsigned integer operations, so some signed operations have to be emulated with helper routines: sign extension (`char` to `int` conversion), comparison, arithmetic right shift and division/modulo. These last two are particularly expensive. For optimal code size and performance, you may want to limit your use of signed integers. Beware that `(unsigned char)a / (unsigned char)b` is a _signed_ operation due to C's integer promotion rules, and this applies to all the binary operators: at least one of the operands must be `unsigned int`, not `unsigned char`, for the result to be unsigned. For bitwise shifts, only the left-hand side counts.
+## Not supported
 
-There are no floats. Arrays, structs, and enums are supported.
+* The preprocessor.
+* `long` (32-bit integers), `long long` (64-bit integers), `float` or `double`.
+* Function pointers.
+* Variable-length arrays.
+* Bit fields.
+* Functions that take or return structs.
 
-Global variable initializers can be pointers to other globals, but only without an offset, so e.g. `int *b = &a;` and `char *foo = "bar";` work, but not `int *b = &a + 1;`. This is because Uxntal can't express an offset to an absolute reference.
-
-The function names `deo deo2 dei dei2` are "intrinsics" corresponding to the uxn instructions. There is a header `uxn.h` defining their prototypes and some useful wrappers around Varvara APIs.
+## Varvara
 
 To set up Varvara event handlers, just define any of the following functions:
 
 - `void on_console(void);`
-  - Called when a byte is received. Call `console_read()` or `console_type()` to process it.
+  - Called when a byte is received.
+  - Use `console_read()` or `console_type()` to process the event.
 - `void on_screen(void);`
   - Called 60 times per second to update the screen.
 - `void on_audio1(void);`
@@ -86,8 +59,10 @@ To set up Varvara event handlers, just define any of the following functions:
 - `void on_audio4(void);`
   - Called when audio ends on channel 4.
 - `void on_controller(void);`
-  - Called when a button is pressed or released on the controller or keyboard. Call `controller_button()` or `controller_key()` to process it.
+  - Called when a button is pressed or released on the controller, or a keyboard key is pressed.
+  - Use `controller_button()` or `controller_key()` to process the event.
 - `void on_mouse(void);`
-  - Called when the mouse is moved. Call `mouse_x()`, `mouse_y()` and `mouse_state()` to process it.
+  - Called when the mouse is moved.
+  - Use `mouse_x()`, `mouse_y()` and `mouse_state()` to process the event.
 
-They will be automatically hooked before your "main" function. You need not (and must not) call `deo2(&on_console, 0x20)`.
+If they are defined, the compiled startup code will hook them up to the right devices before calling your `main`.
