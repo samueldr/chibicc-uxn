@@ -1,5 +1,13 @@
 #include "chibi.h"
 
+int fsize(FILE *fp) {
+  long previous = ftell(fp);
+  fseek(fp, 0L, SEEK_END);
+  long size = ftell(fp);
+  fseek(fp, previous, SEEK_SET);
+  return size;
+}
+
 // Returns the contents of a given file.
 static char *read_file(char *path) {
   // Open and read the file.
@@ -7,7 +15,7 @@ static char *read_file(char *path) {
   if (!fp)
     error("cannot open %s: %s", path, strerror(errno));
 
-  int filemax = 10 * 1024 * 1024;
+  int filemax = fsize(fp) + 3;
   char *buf = malloc(filemax);
   int size = fread(buf, 1, filemax - 2, fp);
   if (!feof(fp))
