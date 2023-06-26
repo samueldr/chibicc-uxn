@@ -1,11 +1,11 @@
 CFLAGS=-std=c11 -g -static -fno-common
-SRCS=codegen.c main.c optimize.c parse.c tokenize.c type.c
+SRCS=$(wildcard src/*.c)
 OBJS=$(SRCS:.c=.o)
 
 chibicc: $(OBJS)
 	$(CC) -o $@ $(OBJS) $(LDFLAGS)
 
-$(OBJS): chibi.h
+$(OBJS): src/chibi.h
 
 # TODO: support uxn chibicc compiling itself?
 #chibicc-gen2: chibicc $(SRCS) chibi.h
@@ -30,6 +30,6 @@ test: chibicc #extern.o
 #	./tmp
 
 clean:
-	rm -rf chibicc chibicc-gen* *.o *~ tmp*
+	rm -rf chibicc chibicc-gen* *.o src/*.o *~ tmp*
 
 .PHONY: test clean
