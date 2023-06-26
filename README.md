@@ -1,6 +1,8 @@
 # chibicc-uxn
 
-This is Rui Ueyama's [chibicc@historical/old](https://github.com/rui314/chibicc/tree/historical/old), retargeted to compile C to [Uxntal](https://100r.co/site/uxn.html).
+This is Rui Ueyama's [chibicc@historical/old](https://github.com/rui314/chibicc/tree/historical/old), retargeted to compile C to [Uxntal](https://wiki.xxiivv.com/site/uxntal.html).
+
+Uxntal is the low-level programming language for [Uxn](https://100r.co/site/uxn.html), a virtual machine for writing tools and games that run on almost any hardware. See [awesome-uxn](https://github.com/hundredrabbits/awesome-uxn).
 
 ![image](https://github.com/lynn/chibicc/assets/16232127/312c01e7-0a82-43c0-86ef-6215010cd250)
 
@@ -27,23 +29,28 @@ See also `make test`, which runs a test suite.
 
 ## Supported
 
-* Boring C89 stuff: functions, loops, global and local variables, arrays, pointers, structs, enums.
-* `char` (8 bits), `short` (16 bits), `int` (16 bits), `unsigned`.
-* Emulation of signed comparisons, signed division and arithmetic right shift.
-  * But these are slow, so use `unsigned` if you want fast code.
-* Variable argument functions, in a very limited fashion — see `examples/printf.c`.
-* Simple peephole optimizations, like `#0004 MUL2` → `#20 SFT2` or `#0004 0005 ADD2` → `#0009`.
+- Boring C89 stuff: functions, loops, global and local variables, arrays, pointers, structs, enums.
+- `char` (8 bits), `short` (16 bits), `int` (16 bits), `unsigned`.
+- Emulation of signed comparisons, signed division and [arithmetic right shift](https://en.wikipedia.org/wiki/Arithmetic_shift).
+  - But these are slow, so use `unsigned` if you want fast code.
+- [Variadic functions](https://en.cppreference.com/w/c/variadic), in a very limited fashion — see `examples/variadic.c`.
+- Simple [peephole optimizations](https://en.wikipedia.org/wiki/Peephole_optimization), like `#0004 MUL2` → `#20 SFT2` or `#0004 0005 ADD2` → `#0009`.
 
 ## Not supported
 
-* The preprocessor.
-* `long` (32-bit integers), `long long` (64-bit integers), `float` or `double`.
-* Function pointers.
-* Variable-length arrays.
-* Bit fields.
-* Functions that take or return structs.
+- The preprocessor.
+- `long` (32-bit integers), `long long` (64-bit integers), `float` or `double`.
+  - I don't really want to add support for them. However, [math32.tal](http://plastic-idolatry.com/erik/nxu/math32.tal) exists.
+- [Function pointers](https://en.wikipedia.org/wiki/Function_pointer).
+- [Variable-length arrays](https://en.cppreference.com/w/c/language/array#Variable-length_arrays).
+- [Bit-fields](https://en.cppreference.com/w/c/language/bit_field).
+- Functions that take or return structs.
 
 ## Varvara
+
+[Varvara](https://wiki.xxiivv.com/site/varvara.html) is the set of I/O interfaces for Uxn-based tools and games.
+
+[uxn.h](./uxn.h) defines macros for setting the window size, drawing sprites on the screen, playing sounds, etc.
 
 To set up Varvara event handlers, just define any of the following functions:
 
