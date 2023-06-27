@@ -386,6 +386,8 @@ typedef enum {
   AT = 0x101, // @label or &label
   SEMI = 0x102, // ;label or ;&label
   BAR = 0x103, // |0000
+
+  ASM = 0x1ff, // asm() code
 } Opcode;
 
 typedef struct Instruction Instruction;

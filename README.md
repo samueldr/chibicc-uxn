@@ -75,3 +75,40 @@ To set up Varvara event handlers, just define any of the following functions:
   - Use `mouse_x()`, `mouse_y()` and `mouse_state()` to process the event.
 
 If they are defined, the compiled startup code will hook them up to the right devices before calling your `main`.
+
+## Interfacing with assembly
+
+The variadic intrinsic `asm()` function accepts a number of `int` arguments which are pushed in order, followed by some Uxntal code that should leave one `int` on the stack.
+
+```c
+int sum_of_squares(int x, int y) {
+  return asm(x, y, "DUP2 MUL2 SWP2 DUP2 MUL2 ADD2");
+}
+```
+
+You can also put this definition in a .tal file, and "link" it as follows:
+
+```c
+// code.c
+
+extern int sum_of_squares(int x, int y);
+```
+
+```tal
+( sum_of_squares.tal )
+
+( Note the underscore at the end of the function name. TODO?: don't mangle extern function calls. )
+
+@sum_of_squares_ ( x* y* -> result* )
+  DUP2 MUL2 SWP2 DUP2 MUL2 ADD2
+  JMP2r
+```
+
+```sh
+# build.sh
+chibicc code.c > tmp.tal
+cat sum_of_squares.tal >> tmp.tal
+uxnasm tmp.tal tmp.rom
+```
+
+See [examples/mandelbrot_fast.c](./examples/mandelbrot_fast.c).

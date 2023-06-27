@@ -947,6 +947,13 @@ void main() {
   assert(1, ({ int x=1, *y; y = &x; *y; }), "int x=1, *y; y = &x; *y");
   assert(1, ({ int *y, x=1; y = &x; *y; }), "int *y, x=1; y = &x; *y");
 
+  // asm expressions
+  assert(25, asm(5, "DUP2 MUL2"), "asm(5, \"DUP2 MUL2\")");
+  assert(18, asm(3, 5, "OVR2 MUL2 ADD2"), "asm(3, 5, \"OVR2 MUL2 ADD2\")");
+  assert(18, asm(3, 5, "OVR2 MUL2 ADD2"), "asm(3, 5, \"OVR2 MUL2 ADD2\")");
+  assert(5, asm(3, 5, "GTH2k JMP SWP2 POP2"), "asm(3, 5, \"GTH2k JMP SWP2 POP2\")");
+  assert(5, asm(5, 3, "GTH2k JMP SWP2 POP2"), "asm(5, 3, \"GTH2k JMP SWP2 POP2\")");
+
   print("All tests passed!\n");
   exit(0);
 }

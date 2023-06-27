@@ -526,6 +526,18 @@ static void gen(Node *node, int depth) {
     gen(node->lhs, depth);
     return;
   case ND_FUNCALL: {
+    if (!strcmp(node->funcname, "asm")) {
+      Node *arg = node->args;
+      while (arg->next) {
+        gen(arg, depth);
+        arg = arg->next;
+      }
+      // Last arg is asm code:
+      if (arg->tok->kind != TK_STR)
+        error_tok(arg->tok, "not a string");
+      emit(ASM, 0, arg->tok->contents);
+      return;
+    }
     if (!strcmp(node->funcname, "deo")) {
       gen(node->args, depth);
       op(NIP);

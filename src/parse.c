@@ -1922,6 +1922,8 @@ static Node *primary(void) {
         node->ty = sc->var->ty->return_ty;
       } else if (!strcmp(node->funcname, "__builtin_va_start")) {
         node->ty = void_type;
+      } else if (!strcmp(node->funcname, "asm")) {
+        node->ty = int_type;
       } else {
         warn_tok(node->tok, "implicit declaration of a function");
         node->ty = int_type;

@@ -300,6 +300,8 @@ void output_one(Instruction* ins) {
     printf("|%04x", ins->literal);
   } else if (ins->opcode == SEMI) {
     printf(";%s", ins->label);
+  } else if (ins->opcode == ASM) {
+    printf("%s", ins->label);
   } else if (ins->opcode == JCI) {
     printf("?%s", ins->label);
   } else if (ins->opcode == JMI) {
