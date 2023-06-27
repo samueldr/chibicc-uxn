@@ -1,15 +1,18 @@
+// This example shows how to link with existing Uxntal code.
+//
+// To compile:
+//
+//     # cd ~/blah/chibicc
+//     ./compile.sh examples/mandelbrot_fast.c > tmp.tal
+//     cat examples/mandelbrot_mul.tal >> tmp.tal
+//     uxnasm tmp.tal tmp.rom
+//     uxnemu tmp.rom
+
 #include <uxn.h>
 
 // Multiply two 8.8 fixed point numbers.
-int mul(unsigned x, unsigned y) {
-  int sign = 1;
-  if (x & 0x8000)
-    x = -x, sign *= -1;
-  if (y & 0x8000)
-    y = -y, sign *= -1;
-  return sign * (((y & 0xff) * (x & 0xff) >> 8) + (y & 0xff) * (x >> 8) +
-                 (y >> 8) * (x & 0xff) + ((y >> 8) * (x >> 8) << 8));
-}
+// Defined in mandelbrot_mul.tal
+extern int mul(unsigned x, unsigned y);
 
 int x0, y0, x, y, i, xx, yy, tmp;
 

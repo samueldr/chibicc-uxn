@@ -1,0 +1,20 @@
+( Multiply two 8.8 fixed point numbers. )
+@mul_ ( xx yy -> xx*yy )
+    LIT2r 0001
+    SWP2 DUP2 #8000 LTH2 ?&posx
+    #0000 SWP2 SUB2 LIT2r ffff MUL2r &posx
+    SWP2 DUP2 #8000 LTH2 ?&posy
+    #0000 SWP2 SUB2 LIT2r ffff MUL2r &posy
+    ( xx yy )
+    OVR2k OVR2k
+    ( xx yy xx yy xx yy xx yy )
+    #00ff AND2 SWP2 #00ff AND2 MUL2 #08 SFT2
+    ( xx yy xx yy xx yy AA )
+    ROT2 #08 SFT2 ROT2 #00ff AND2 MUL2 ADD2
+    ( xx yy xx yy AA+BB )
+    ROT2 #00ff AND2 ROT2 #08 SFT2 MUL2 ADD2
+    ( xx yy AA+BB+CC )
+    ROT2 #08 SFT2 ROT2 #08 SFT2 MUL2 #80 SFT2 ADD2
+    ( AA+BB+CC+DD )
+    STH2r MUL2
+    JMP2r
