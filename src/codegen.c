@@ -773,11 +773,18 @@ static void emit_text(Program *prog) {
   for (Function *fn = prog->fns; fn; fn = fn->next) {
     // Name is suffixed with _ so that uxnasm won't complain if it happens to be
     // hexadecimal.
-    at("%s_", fn->name);
+    char signature[256];
+    char *w = signature;
+    char *end = signature + sizeof(signature);
+    for (VarList *p = fn->params; p && w < end; p = p->next) {
+      w += snprintf(w, end - w, " %s*", p->var->name);
+    }
+    *w = '\0';
+    at("%s_ (%s -- result* )", fn->name, signature);
     funcname = fn->name;
-		labelseq = 1;
-		brkseq = 0;
-		contseq = 0;
+    labelseq = 1;
+    brkseq = 0;
+    contseq = 0;
 
     // Prologue
     // Copy the frame pointer from the "frame" below.
