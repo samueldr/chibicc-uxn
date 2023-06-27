@@ -181,7 +181,7 @@ static Type *type_suffix(Type *ty);
 static Type *type_name(void);
 static Type *struct_decl(void);
 static Type *enum_specifier(void);
-static Member *struct_member(void);
+static void struct_member(Member **cur);
 static void global_var(void);
 static Node *declaration(void);
 static bool is_typename(void);
@@ -520,8 +520,7 @@ static Type *struct_decl(void) {
   Member *cur = &head;
 
   while (!consume("}")) {
-    cur->next = struct_member();
-    cur = cur->next;
+    struct_member(&cur);
   }
 
   ty->members = head.next;
@@ -612,19 +611,29 @@ static Type *enum_specifier(void) {
 }
 
 // struct-member = basetype declarator type-suffix ";"
-static Member *struct_member(void) {
-  Type *ty = basetype(NULL);
-  Token *tok = token;
-  char *name = NULL;
+void struct_member(Member **cur) {
+  Type *ty_base = basetype(NULL);
+  Type *ty;
+  Token *tok;
+  char *name;
+
+next_struct_member:
+  ty = ty_base;
+  name = NULL;
+  tok = token;
   ty = declarator(ty, &name);
   ty = type_suffix(ty);
-  expect(";");
 
   Member *mem = calloc(1, sizeof(Member));
   mem->name = name;
   mem->ty = ty;
   mem->tok = tok;
-  return mem;
+  (*cur)->next = mem;
+  *cur = (*cur)->next;
+  if (consume(","))
+    goto next_struct_member;
+  expect(";");
+  return;
 }
 
 static VarList *read_func_param(void) {
@@ -887,36 +896,47 @@ static Initializer *gvar_initializer(Type *ty) {
 // global-var = basetype declarator type-suffix ("=" gvar-initializer)? ";"
 static void global_var(void) {
   StorageClass sclass;
-  Type *ty = basetype(&sclass);
+  char *name;
+  Token *tok;
+  Type *ty_base = basetype(&sclass);
+  Type *ty;
   if (consume(";"))
     return;
 
-  char *name = NULL;
-  Token *tok = token;
+next_global_var:
+  ty = ty_base;
+  name = NULL;
+  tok = token;
   ty = declarator(ty, &name);
   ty = type_suffix(ty);
 
   if (sclass == TYPEDEF) {
-    expect(";");
     push_scope(name)->type_def = ty;
+    expect(";");
     return;
   }
 
   Var *var = new_gvar(name, ty, sclass == STATIC, sclass != EXTERN);
 
   if (sclass == EXTERN) {
+    if (consume(","))
+      goto next_global_var;
     expect(";");
     return;
   }
 
   if (consume("=")) {
     var->initializer = gvar_initializer(ty);
+    if (consume(","))
+      goto next_global_var;
     expect(";");
     return;
   }
 
   if (ty->is_incomplete)
     error_tok(tok, "incomplete type");
+  if (consume(","))
+    goto next_global_var;
   expect(";");
 }
 
@@ -1098,19 +1118,25 @@ static Node *lvar_initializer(Var *var, Token *tok) {
 static Node *declaration(void) {
   Token *tok = token;
   StorageClass sclass;
-  Type *ty = basetype(&sclass);
-  if ((tok = consume(";")))
-    return new_node(ND_NULL, tok);
+  Type *ty_base = basetype(&sclass);
+  Type *ty;
+  Node *node = new_node(ND_NULL, tok);
+  char *name;
 
+  if ((tok = consume(";")))
+    return node;
+
+next_declaration:
+  ty = ty_base;
   tok = token;
-  char *name = NULL;
+  name = NULL;
   ty = declarator(ty, &name);
   ty = type_suffix(ty);
 
   if (sclass == TYPEDEF) {
     expect(";");
     push_scope(name)->type_def = ty;
-    return new_node(ND_NULL, tok);
+    return node;
   }
 
   if (ty->kind == TY_VOID)
@@ -1125,20 +1151,28 @@ static Node *declaration(void) {
       var->initializer = gvar_initializer(ty);
     else if (ty->is_incomplete)
       error_tok(tok, "incomplete type");
-    consume(";");
-    return new_node(ND_NULL, tok);
+
+    if (consume(","))
+      goto next_declaration;
+    expect(";");
+    return node;
   }
 
   Var *var = new_lvar(name, ty);
 
-  if (consume(";")) {
-    if (ty->is_incomplete)
-      error_tok(tok, "incomplete type");
-    return new_node(ND_NULL, tok);
+  if (consume("=")) {
+    Node *init_node = lvar_initializer(var, tok);
+    node = new_binary(ND_COMMA, node, init_node, tok);
+    if (consume(","))
+      goto next_declaration;
+    expect(";");
+    return node;
   }
 
-  expect("=");
-  Node *node = lvar_initializer(var, tok);
+  if (ty->is_incomplete)
+    error_tok(tok, "incomplete type");
+  if (consume(","))
+    goto next_declaration;
   expect(";");
   return node;
 }

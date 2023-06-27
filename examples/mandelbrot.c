@@ -37,14 +37,7 @@ int mul(unsigned x, unsigned y) {
                  (y >> 8) * (x & 0xff) + ((y >> 8) * (x >> 8) << 8));
 }
 
-int x0;
-int y0;
-int x;
-int y;
-int i;
-int xx;
-int yy;
-int tmp;
+int x0, y0, x, y, i, xx, yy, tmp;
 
 void main(void) {
   set_palette(0x08df, 0x12bf, 0x549d);
