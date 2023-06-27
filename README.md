@@ -86,19 +86,18 @@ int sum_of_squares(int x, int y) {
 }
 ```
 
-You can also put this definition in a .tal file, and "link" it as follows:
+This is useful if you just want a little Uxntal idiom in the middle of your C.
+
+However, in this case `sum_of_squares` still contains a lot of unnecessary code (creating a stack frame, and copying `x` and `y` to and from it). We can avoid this by simply writing an Uxntal function in a `.tal` file and linking it with our compiler output:
 
 ```c
 // code.c
-
 extern int sum_of_squares(int x, int y);
 ```
 
 ```tal
 ( sum_of_squares.tal )
-
 ( Note the underscore at the end of the function name. TODO?: don't mangle extern function calls. )
-
 @sum_of_squares_ ( x* y* -> result* )
   DUP2 MUL2 SWP2 DUP2 MUL2 ADD2
   JMP2r
