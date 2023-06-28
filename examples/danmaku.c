@@ -194,7 +194,7 @@ void update_bullets(void) {
       destroy_bullet(i, &num_player_bullets, player_bullets);
       play_audio(1, 45);
       enemy_flash_timer = 2;
-      enemy_health -= 20;
+      enemy_health -= 2;
       if (enemy_health == 0) {
         play_explosion_sound();
         melody_ptr = victory_melody;
