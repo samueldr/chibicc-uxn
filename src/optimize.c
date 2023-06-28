@@ -18,7 +18,7 @@ void emit(Opcode opcode, int literal, char* label) {
   emit_head = emit_head->next;
 }
 
-char buf[64];
+char buf[4096];
 void op(Opcode o) { emit(o, 0, ""); }
 void jci(char* fmt, ...) { va_list va; va_start(va, fmt); vsprintf(buf, fmt, va); va_end(va); emit(JCI, 0, buf); }
 void jmi(char* fmt, ...) { va_list va; va_start(va, fmt); vsprintf(buf, fmt, va); va_end(va); emit(JMI, 0, buf); }
