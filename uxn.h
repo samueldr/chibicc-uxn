@@ -28,8 +28,8 @@ typedef struct {
 
 #define console_read() dei(0x12)
 #define console_type() dei(0x17)
-#define console_write(c) deo(c, 0x18)
-#define console_error() dei(0x19)
+#define console_write(c) deo(c, 0x18) // stdout
+#define console_error(c) deo(c, 0x19) // stderr
 #define getchar console_read
 #define putchar console_write
 
