@@ -20,4 +20,6 @@ void main(int argc, char *argv[]) {
 		print_string(argv[i]);
 		putchar('\n');
 	}
+
+	exit(0);
 }

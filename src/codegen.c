@@ -879,8 +879,8 @@ void do_argc_argv_hook(void) {
   printf("  LIT2r fffe #0001 STH2kr STA2 LIT2r 0001 SUB2r #17 DEI ?&set_arg_hook !prep_argc_argv_and_call_main\n");
   printf("  &set_arg_hook ;L.console.hook #10 DEO2 BRK\n");
   printf("@L.console.hook #17 DEI #02 SUB DUP #02 GTH ?&not_an_arg LIT2r 0001 SUB2r DUP ?&arg_space_or_args_end POP #12 DEI STH2kr STA\n");
-  printf("  &done BRK\n");
-  printf("  &not_an_arg POP #01 #0f DEO BRK\n");
+  printf("  &done\n");
+  printf("  &not_an_arg BRK\n");
   printf("  &arg_space_or_args_end #00 STH2kr STA #fffe LDA2k INC2 SWP2 STA2 #01 EQU ?&done\n");
   printf("@prep_argc_argv_and_call_main #fffd DUP2r\n");
   printf("  &stack_reverse_loop LDAk STH2kr LDA SWP STH2kr STA ROT ROT STAk ROT POP #0001 SUB2 INC2r STH2kr OVR2 LTH2 ?&stack_reverse_loop POP2 POP2r STH2kr LIT2r fffe LDA2r INCr LITr 10 SFT2r SUB2r STH2kr SWP2\n");

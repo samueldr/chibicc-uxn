@@ -26,10 +26,8 @@
     POP
     #12 DEI                 ( get char )
     STH2kr STA              ( write char to stack )
-  &done
+  &done &not_an_arg         ( TODO: passthrough for kind == 5 i.e. stdin )
     BRK
-  &not_an_arg
-    POP #01 #0f DEO BRK     ( exit(1); )
   &arg_space_or_args_end
   ( this is kind 3 or 4: space between args or end of args )
     #00 STH2kr STA              ( write null terminator to stack )
