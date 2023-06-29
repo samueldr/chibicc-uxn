@@ -1,0 +1,91 @@
+( debugging tools for argc_argv.tal - combine this file with that one, and then
+  optionally replace the call to main_ with a call to fake_main, then assemble )
+
+( print the stack )
+@print_stack
+    OVR2r STH2kr
+    &loop
+      LDAk #18 DEO              ( putchar(*sp); )
+      DUP2 #ffff EQU2 ?&done    ( if(sp == 0xffff) break; )
+      INC2                      ( sp++; )
+      !&loop
+    &done
+      POP2
+    POP2r JMP2r
+
+( fake main function that just calls print_stack )
+@fake_main_ ( argv* argc* -- )
+    OVR2r
+
+    POP2 POP2 print_stack
+
+    #80 #0f DEO BRK     ( exit(0); )
+
+    POP2r JMP2r
+
+(
+  this bit isn't hand-written, it's uxn-chibicc's output for this code:
+
+    void real_main(int argc, char *argv[]) {
+        putchar('0' + ((argc / 10) % 10));
+        putchar('0' + (argc % 10));
+        putchar('\n');
+
+        for (int i = 0; i < argc; i++) {
+            putchar('0' + ((i / 10) % 10));
+            putchar('0' + (i % 10));
+            putchar(':');
+            for (char *arg = argv[i]; *arg; arg++) putchar(*arg);
+            putchar('\n');
+        }
+    }
+
+  but the function has been renamed to main_
+)
+@sext
+  #80 ANDk EQU #ff MUL SWP JMP2r
+@sdiv
+  OVR2 #4f SFT2 OVR2 #0f SFT2 ORA2 NIP
+  DUP #00 EQU ?&pospos
+  DUP #01 EQU ?&posneg
+  #10 EQU ?&negpos
+  #0000 ROT2 SUB2 SWP2 #0000 SWP2 SUB2 DIV2 JMP2r
+  &pospos POP DIV2 JMP2r
+  &posneg POP #0000 SWP2 SUB2 DIV2 #0000 SWP2 SUB2 JMP2r
+  &negpos SWP2 #0000 SWP2 SUB2 SWP2 DIV2 #0000 SWP2 SUB2 JMP2r
+@main_ ( argv* argc* -- result* )
+    OVR2r LIT2r 0008 SUB2r STH2kr #0006 ADD2 STA2
+    STH2kr #0004 ADD2 STA2
+    STH2kr #0006 ADD2 LDA2 #000a sdiv
+    #000a OVR2 OVR2 sdiv
+    MUL2 SUB2 #0030 ADD2 NIP #18 DEO STH2kr #0006 ADD2 LDA2 #000a OVR2 OVR2 sdiv
+    MUL2 SUB2 #0030 ADD2 NIP #18 DEO #0a18 DEO #0000 STH2kr #0002 ADD2 STA2
+
+  &begin.1
+    STH2kr #0002 ADD2 LDA2 #8000 EOR2 STH2kr #0006 ADD2 LDA2 #8000 EOR2 LTH2 #00 EQU ?&break.1
+    STH2kr #0002 ADD2 LDA2 #000a sdiv
+    #000a OVR2 OVR2 sdiv
+    MUL2 SUB2 #0030 ADD2 NIP #18 DEO STH2kr #0002 ADD2 LDA2 #000a OVR2 OVR2 sdiv
+    MUL2 SUB2 #0030 ADD2 NIP #18 DEO #3a18 DEO STH2kr #0004 ADD2 LDA2 STH2kr #0002 ADD2 LDA2 #10 SFT2 ADD2 LDA2 STH2kr STA2
+
+  &begin.2
+    STH2kr LDA2 LDA sext
+    #0000 EQU2 ?&break.2
+    STH2kr LDA2 LDA #18 DEO
+
+  &continue.2
+    STH2kr LDA2k INC2k ROT2 STA2
+    POP2 !&begin.2
+
+  &break.2
+    #0a18 DEO
+
+  &continue.1
+    STH2kr #0002 ADD2 LDA2k INC2k ROT2 STA2
+    POP2 !&begin.1
+
+  &break.1
+    #0000
+
+  &return
+    POP2r JMP2r

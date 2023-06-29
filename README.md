@@ -76,6 +76,10 @@ To set up Varvara event handlers, just define any of the following functions:
 
 If they are defined, the compiled startup code will hook them up to the right devices before calling your `main`.
 
+`void main(int argc, char *argv[])` is supported, but this will add [a huge support routine](routines/update_argc_argv.sh) to your code, so in some cases a custom `on_console` routine is more efficient. Demo: `./run.sh --cli examples/argc_argv.c foo bar 'foo bar'`.
+
+Note that the program doesn't terminate when it reaches the end of `main`; as such, the return value is ignored. Use `exit()` if you want to exit and set the status code.
+
 ## Interfacing with assembly
 
 The variadic intrinsic `asm()` function accepts a number of `int` arguments which are pushed in order, followed by some Uxntal code that should leave one `int` on the stack.

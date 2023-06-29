@@ -1,0 +1,77 @@
+( This file is the source for the argc/argv setup routine. )
+( Please keep it in sync with the code in codegen.c using update_argc_argv.sh )
+( See also: argc_argv_debug.tal )
+
+( reset vector )
+|0100
+  LIT2r fffe        ( set up stack pointer, reserving two bytes for argc )
+  #0001 STH2kr STA2 ( argc = 1 )
+  LIT2r 0001 SUB2r  ( first null terminator: argv[0] = "" )
+
+  #17 DEI ?&set_arg_hook            ( are there any real arguments? )
+  !prep_argc_argv_and_call_main     ( if not, don't wait for them )
+  &set_arg_hook                     ( otherwise, hook vector and wait )
+    ;L.console.hook #10 DEO2 BRK
+
+@L.console.hook
+  #17 DEI #02 SUB           ( get input kind - 2, we only care about 2..4 ) 
+  DUP #02 GTH ?&not_an_arg  ( jump if kind > 4 )
+
+  ( at this point we know we're dealing with an argument byte )
+  LIT2r 0001 SUB2r          ( reserve stack space for writing it or '\0' )
+
+  DUP ?&arg_space_or_args_end   ( jump if kind == 3 || kind == 4 )
+
+  ( this is kind 2:  start or continuation of an argument )
+    POP
+    #12 DEI                 ( get char )
+    STH2kr STA              ( write char to stack )
+  &done
+    BRK
+  &not_an_arg
+    POP #01 #0f DEO BRK     ( exit(1); )
+  &arg_space_or_args_end
+  ( this is kind 3 or 4: space between args or end of args )
+    #00 STH2kr STA              ( write null terminator to stack )
+    #fffe LDA2k INC2 SWP2 STA2  ( increment argc )
+    #01 EQU ?&done              ( if this is an arg space, we are done )
+  ( this is kind 4, end of args: fall through to prep_argc_argv_and_call_main )
+
+@prep_argc_argv_and_call_main
+  ( reverse the stack )
+
+  #fffd                     ( ptr1 = stack high addr - 1 )
+  DUP2r                     ( ptr2 = sp )
+  &stack_reverse_loop                       ( WS: ptr1      RS: ptr2 )
+    LDAk                    ( a = *ptr1 )   ( WS: ptr1 a )
+    STH2kr LDA              ( b = *ptr2 )   ( WS: ptr1 a b )
+    SWP STH2kr STA          ( *ptr2 = a )   ( WS: ptr1 b )
+    ROT ROT STAk ROT POP    ( *ptr1 = b )   ( WS: ptr1 )
+    #0001 SUB2              ( ptr1-- )      ( WS: ptr1 )
+    INC2r                   ( ptr2++ )
+    STH2kr OVR2 LTH2 ?&stack_reverse_loop   ( while (ptr2 < ptr1); )
+  POP2 POP2r
+
+  ( backup sp )
+
+  STH2kr
+
+  ( reserve space for argv pointers. argv[argc] is NULL )
+
+  LIT2r fffe LDA2r INCr LITr 10 SFT2r SUB2r     ( sp -= (argc + 1) * 2; )
+
+  ( make argv pointers )
+
+                    ( char **argv_current = sp; char *args_concat = old_sp; )
+  STH2kr SWP2       ( WS: argv_current args_concat )
+  &argv_loop
+    SWP2 STA2k #0002 ADD2 SWP2      ( *(argv_current++) = args_concat; )
+    &strlen_loop                    ( args_concat += strlen(args_concat) + 1; )
+      INC2k SWP2 LDA ?&strlen_loop
+    DUP2 #fffe LTH2 ?&argv_loop     ( while (args_current < 0xfffe); )
+  POP2 POP2
+
+  ( done: finally we can call main )
+
+  STH2kr #fffe LDA2 main_           ( argv argc main_ => main(argc, argv) )
+  BRK
