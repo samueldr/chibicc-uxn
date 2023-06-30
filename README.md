@@ -6,6 +6,8 @@ Uxntal is the low-level programming language for [Uxn](https://100r.co/site/uxn.
 
 ![image](https://github.com/lynn/chibicc/assets/16232127/312c01e7-0a82-43c0-86ef-6215010cd250)
 
+chibicc-uxn is featureful enough to write small [games](examples/danmaku.c) and [demos](example/star.c). We have even managed to port [a classic desktop pet application](https://github.com/hikari-no-yume/oneko-uxn) from X11!
+
 ## Usage
 
 Running `make` will build `./chibicc`.
