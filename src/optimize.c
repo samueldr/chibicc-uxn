@@ -204,7 +204,7 @@ static bool optimize_pass(Instruction* prog, int stage) {
     if (prog->opcode == EQU2
         && prog->next && prog->next->opcode == LIT && prog->next->literal == 0
         && prog->next->next && prog->next->next->opcode == SWP
-        && prog->next->next->next && prog->next->next->next->opcode == LIT2 && prog->next->literal == 0
+        && prog->next->next->next && prog->next->next->next->opcode == LIT2 && prog->next->next->next->literal == 0
         && prog->next->next->next->next && prog->next->next->next->next->opcode == EQU2) {
       prog->opcode = NEQ2;
       prog->next = prog->next->next->next->next->next;
@@ -215,7 +215,7 @@ static bool optimize_pass(Instruction* prog, int stage) {
     // #00 SWP #0000 EQU2 ? -> #00 EQU ?
     if (prog->opcode == LIT && prog->literal == 0
         && prog->next && prog->next->opcode == SWP
-        && prog->next->next && prog->next->next->opcode == LIT2 && prog->literal == 0
+        && prog->next->next && prog->next->next->opcode == LIT2 && prog->next->next->literal == 0
         && prog->next->next->next && prog->next->next->next->opcode == EQU2
         && prog->next->next->next->next->opcode == JCI) {
       prog->next->opcode = EQU;
@@ -226,7 +226,7 @@ static bool optimize_pass(Instruction* prog, int stage) {
 
     // sext #0000 NEQ2 ? -> ?
     if (prog->opcode == JSI && !strcmp("sext", prog->label)
-        && prog->next && prog->next->opcode == LIT2 && prog->literal == 0
+        && prog->next && prog->next->opcode == LIT2 && prog->next->literal == 0
         && prog->next->next && prog->next->next->opcode == NEQ2
         && prog->next->next->next->opcode == JCI) {
       memcpy(prog, prog->next->next->next, sizeof(Instruction));
@@ -235,7 +235,7 @@ static bool optimize_pass(Instruction* prog, int stage) {
     // same with zext (#00 SWP)
     } else if (prog->opcode == LIT && prog->literal == 0
         && prog->next && prog->next->opcode == SWP
-        && prog->next->next && prog->next->next->opcode == LIT2 && prog->literal == 0
+        && prog->next->next && prog->next->next->opcode == LIT2 && prog->next->next->literal == 0
         && prog->next->next->next && prog->next->next->next->opcode == NEQ2
         && prog->next->next->next->next->opcode == JCI) {
       memcpy(prog, prog->next->next->next->next, sizeof(Instruction));
