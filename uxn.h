@@ -64,8 +64,8 @@ typedef struct {
 #define mouse_scrolly() dei2(0x9c)
 
 /// Read up to n bytes from file "name" into addr, then return bytes read.
-#define file_read(name, n, addr) (deo2(name, 0xa8), deo2(len, 0xaa), deo2(addr, 0xac), dei2(0xa2))
-#define _file_write(name, n, addr, append) (deo(append, 0xa7), deo2(name, 0xa8), deo2(len, 0xaa), deo2(addr, 0xae), dei2(0xa2))
+#define file_read(name, n, addr) (deo2(name, 0xa8), deo2(n, 0xaa), deo2(addr, 0xac), dei2(0xa2))
+#define _file_write(name, n, addr, append) (deo(append, 0xa7), deo2(name, 0xa8), deo2(n, 0xaa), deo2(addr, 0xae), dei2(0xa2))
 /// Write n bytes from addr into file "name", then return bytes written.
 #define file_write(name, n, addr) _file_write(name, n, addr, 0)
 #define file_append(name, n, addr) _file_write(name, n, addr, 1)
