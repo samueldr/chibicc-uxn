@@ -191,6 +191,24 @@ static bool optimize_pass(Instruction *prog, int stage) {
       continue;
     }
 
+    // Bypass divisor sign check for known signs
+    if (prog->opcode == LIT2 && prog->next && prog->next->opcode == JSI &&
+        !strcmp("sdiv", prog->next->label)) {
+      prog->next->label =
+          (prog->literal & 0x8000) ? "sdiv/b_neg" : "sdiv/b_pos";
+      changed = true;
+      continue;
+      // modulo variant
+    } else if (prog->opcode == LIT2 && prog->next &&
+               prog->next->opcode == OVR2 && prog->next->next &&
+               prog->next->next->opcode == OVR2 && prog->next->next->next &&
+               prog->next->next->next->opcode == JSI &&
+               !strcmp("sdiv", prog->next->next->next->label)) {
+      prog->next->next->next->label =
+          (prog->literal & 0x8000) ? "sdiv/b_neg" : "sdiv/b_pos";
+      changed = true;
+    }
+
     // #10 SFT2 -> DUP2 ADD2
     if (IsLit2(prog, 10) && prog->next && prog->next->opcode == SFT2) {
       prog->opcode = DUP2;

@@ -138,7 +138,7 @@ static void gen_binary(Node *node) {
     op(SUB2);
     lit2(node->lhs->ty->base->size);
     need_sdiv_helper = true;
-    jsi("sdiv");
+    jsi("sdiv/b_pos"); // size should never be negative
     break;
   case ND_MUL:
   case ND_MUL_EQ:
@@ -845,21 +845,24 @@ static void emit_text(Program *prog) {
   }
   if (need_sdiv_helper) {
     // Signed division (uxn's DIV is unsigned)
+    // Normally we jump to sdiv, but as an optimization, we can jump to
+    // sdiv/b_pos or sdiv/b_neg directly if we know the divisor's sign!
     printf("@sdiv\n");
-    // Get the sign bits of the two inputs and combine them into a single byte
-    printf("  OVR2 #4f SFT2 OVR2 #0f SFT2 ORA2 NIP\n");
-    // Branch accordingly
-    printf("  DUP #00 EQU ?&pospos\n"); // most common case first
-    printf("  DUP #01 EQU ?&posneg\n");
-    printf("  #10 EQU ?&negpos\n");
-    // (-a / -b)
-    printf("  #0000 ROT2 SUB2 SWP2 #0000 SWP2 SUB2 DIV2 JMP2r\n");
+    printf("    OVR #80 AND ?&b_neg");
+    printf("  &b_pos");
+    printf("    OVR2 POP #80 AND ?&a_neg_b_pos");
     // (a / b)
-    printf("  &pospos POP DIV2 JMP2r\n");
-    // -(a / -b)
-    printf("  &posneg POP #0000 SWP2 SUB2 DIV2 #0000 SWP2 SUB2 JMP2r\n");
+    printf("    DIV2 JMP2r");
+    printf("  &a_neg_b_pos");
     // -(-a / b)
-    printf("  &negpos SWP2 #0000 SWP2 SUB2 SWP2 DIV2 #0000 SWP2 SUB2 JMP2r\n");
+    printf("    SWP2 #0000 SWP2 SUB2 SWP2 DIV2 #0000 SWP2 SUB2 JMP2r\n");
+    printf("  &b_neg");
+    printf("    OVR2 POP #80 AND ?&a_neg_b_neg");
+    // -(a / -b)
+    printf("    #0000 SWP2 SUB2 DIV2 #0000 SWP2 SUB2 JMP2r\n");
+    printf("  &a_neg_b_neg");
+    // (-a / -b)
+    printf("    #0000 ROT2 SUB2 SWP2 #0000 SWP2 SUB2 DIV2 JMP2r\n");
   }
 }
 
