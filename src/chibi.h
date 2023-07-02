@@ -6,7 +6,6 @@
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
@@ -74,7 +73,7 @@ struct Var {
   bool is_local; // local or global
 
   // Local variable
-  int offset;    // Offset from RBP
+  int offset; // Offset from RBP
 
   // Global variable
   bool is_static;
@@ -189,7 +188,7 @@ struct Node {
     Node *body; // Block or statement expression
   };
   union {
-    char *funcname; // Function call
+    char *funcname;   // Function call
     char *label_name; // Goto or labeled statement
     Var *var;
     long val; // Integer literal
@@ -243,9 +242,9 @@ typedef enum {
   TY_VOID,
   TY_BOOL,
   TY_CHAR,
-  //TY_SHORT,
+  // TY_SHORT,
   TY_INT,
-  //TY_LONG,
+  // TY_LONG,
   TY_ENUM,
   TY_PTR,
   TY_ARRAY,
@@ -260,10 +259,10 @@ struct Type {
   bool is_unsigned;   // unsignedness (integers only)
   bool is_incomplete; // incomplete type
 
-  Type *base;         // pointer or array
-  int array_len;      // array
-  Member *members;    // struct
-  Type *return_ty;    // function
+  Type *base;      // pointer or array
+  int array_len;   // array
+  Member *members; // struct
+  Type *return_ty; // function
 };
 
 // Struct member
@@ -283,8 +282,8 @@ extern Type *uchar_type;
 // extern Type *ushort_type;
 extern Type *int_type;
 extern Type *uint_type;
-//extern Type *long_type;
-//extern Type *ulong_type;
+// extern Type *long_type;
+// extern Type *ulong_type;
 
 bool is_integer(Type *ty);
 int align_to(int n, int align);
@@ -384,9 +383,9 @@ typedef enum {
   LIT2r = 0xe0,
 
   BRK = 0x100,
-  AT = 0x101, // @label or &label
+  AT = 0x101,   // @label or &label
   SEMI = 0x102, // ;label or ;&label
-  BAR = 0x103, // |0000
+  BAR = 0x103,  // |0000
 
   ASM = 0x1ff, // asm() code
 } Opcode;
@@ -395,23 +394,23 @@ typedef struct Instruction Instruction;
 struct Instruction {
   Opcode opcode;
   unsigned short literal; // appended if opcode is "LIT"
-  char *label; // appended if opcode is "JSI", "JMI", "JCI"
+  char *label;            // appended if opcode is "JSI", "JMI", "JCI"
   Instruction *next;
 };
 
 extern Instruction *emit_head;
-void emit(Opcode opcode, int literal, char* label);
+void emit(Opcode opcode, int literal, char *label);
 void op(Opcode o);
-void jci(char* fmt, ...);
-void jmi(char* fmt, ...);
-void jsi(char* fmt, ...);
+void jci(char *fmt, ...);
+void jmi(char *fmt, ...);
+void jsi(char *fmt, ...);
 void lit(unsigned char n);
 void lit2(unsigned short n);
 void lit2r(unsigned short n);
-void at(char* fmt, ...);
-void semi(char* fmt, ...);
+void at(char *fmt, ...);
+void semi(char *fmt, ...);
 void bar(unsigned short n);
 
-void optimize(Instruction* prog);
-void output(Instruction* prog);
+void optimize(Instruction *prog);
+void output(Instruction *prog);
 void proof_of_concept(void);
