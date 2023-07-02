@@ -1,3 +1,3 @@
-int f(int x) {
-    return x > 8;
+int f(int x, int y) {
+    return x - y;
 }

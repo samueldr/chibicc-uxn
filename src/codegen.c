@@ -767,19 +767,28 @@ static void load_arg(Var *var) {
   }
 }
 
+char signature[256];
+char *sigptr;
+static void walk_signature(VarList *param) {
+  char *end = signature + sizeof(signature);
+  if (!param) {
+    *sigptr = '\0';
+    return;
+  }
+  walk_signature(param->next);
+  if (sigptr < end) {
+    sigptr += snprintf(sigptr, end - sigptr, " %s*", param->var->name);
+  }
+}
+
 static void emit_text(Program *prog) {
   printf("( text )\n");
 
   for (Function *fn = prog->fns; fn; fn = fn->next) {
     // Name is suffixed with _ so that uxnasm won't complain if it happens to be
     // hexadecimal.
-    char signature[256];
-    char *w = signature;
-    char *end = signature + sizeof(signature);
-    for (VarList *p = fn->params; p && w < end; p = p->next) {
-      w += snprintf(w, end - w, " %s*", p->var->name);
-    }
-    *w = '\0';
+    sigptr = signature;
+    walk_signature(fn->params);
     at("%s_ (%s -- result* )", fn->name, signature);
     funcname = fn->name;
     labelseq = 1;

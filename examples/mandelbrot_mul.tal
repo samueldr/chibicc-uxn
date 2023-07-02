@@ -1,5 +1,5 @@
 ( Multiply two 8.8 fixed point numbers. )
-@mul_ ( xx yy -> xx*yy )
+@mul_ ( y* x* -> x-times-y* )
     LIT2r 0001
     SWP2 DUP2 #8000 LTH2 ?&posx
     #0000 SWP2 SUB2 LIT2r ffff MUL2r &posx
