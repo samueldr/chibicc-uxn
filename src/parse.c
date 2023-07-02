@@ -360,11 +360,13 @@ static Type *basetype(StorageClass *sclass) {
     case SHORT + INT:
     case SIGNED + SHORT:
     case SIGNED + SHORT + INT:
-      ty = short_type;
+      // ty = short_type;
+      ty = int_type;
       break;
     case UNSIGNED + SHORT:
     case UNSIGNED + SHORT + INT:
-      ty = ushort_type;
+      // ty = ushort_type;
+      ty = uint_type;
       break;
     case INT:
     case SIGNED:

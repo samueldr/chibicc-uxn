@@ -921,6 +921,12 @@ void main() {
   assert(0x7fff, ((unsigned)0 - (unsigned char)1) / 2, "((unsigned)0 - (unsigned char)1) / 2");
   assert(0x7fff, ((unsigned char)0 - (unsigned)1) >> 1, "((unsigned char)0 - (unsigned)1) >> 1");
   assert(0x7fff, ((unsigned char)0 - (unsigned)1) / 2, "((unsigned char)0 - (unsigned)1) / 2");
+  assert(0x7fff, ((unsigned short)0 - (unsigned short)1) >> 1, "((unsigned short)0 - (unsigned short)1) >> 1");
+  assert(0x7fff, ((unsigned short)0 - (unsigned short)1) / 2, "((unsigned short)0 - (unsigned short)1) / 2");
+  assert(0x7fff, ((unsigned short)0 - (unsigned char)1) >> 1, "((unsigned short)0 - (unsigned char)1) >> 1");
+  assert(0x7fff, ((unsigned short)0 - (unsigned char)1) / 2, "((unsigned short)0 - (unsigned char)1) / 2");
+  assert(0x7fff, ((unsigned char)0 - (unsigned short)1) >> 1, "((unsigned char)0 - (unsigned short)1) >> 1");
+  assert(0x7fff, ((unsigned char)0 - (unsigned short)1) / 2, "((unsigned char)0 - (unsigned short)1) / 2");
   assert(0x7fff, (0u - 1u) >> 1, "(0u - 1u) >> 1");
   assert(0x7fff, (0u - 1u) / 2, "(0u - 1u) / 2");
   assert(0x7fff, (0u - 1) >> 1, "(0u - 1) >> 1");

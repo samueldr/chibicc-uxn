@@ -242,7 +242,7 @@ typedef enum {
   TY_VOID,
   TY_BOOL,
   TY_CHAR,
-  TY_SHORT,
+  //TY_SHORT,
   TY_INT,
   //TY_LONG,
   TY_ENUM,
@@ -278,8 +278,8 @@ extern Type *void_type;
 extern Type *bool_type;
 extern Type *char_type;
 extern Type *uchar_type;
-extern Type *short_type;
-extern Type *ushort_type;
+// extern Type *short_type;
+// extern Type *ushort_type;
 extern Type *int_type;
 extern Type *uint_type;
 //extern Type *long_type;
