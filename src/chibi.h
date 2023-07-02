@@ -159,43 +159,44 @@ typedef struct Node Node;
 struct Node {
   NodeKind kind; // Node kind
   Node *next;    // Next node
-  Type *ty;      // Type, e.g. int or pointer to int
   Token *tok;    // Representative token
-
-  Node *lhs;     // Left-hand side
-  Node *rhs;     // Right-hand side
-
-  // "if, "while" or "for" statement
-  Node *cond;
-  Node *then;
-  Node *els;
-  Node *init;
-  Node *inc;
-
-  // Block or statement expression
-  Node *body;
-
-  // Struct member access
-  Member *member;
-
-  // Function call
-  char *funcname;
-  Node *args;
-
-  // Goto or labeled statement
-  char *label_name;
-
-  // Switch-cases
-  Node *case_next;
-  Node *default_case;
-  int case_label;
-  int case_end_label;
-
-  // Variable
-  Var *var;
-
-  // Integer literal
-  long val;
+  Type *ty;      // Type, e.g. int or pointer to int
+#ifndef SHRINK_NODE
+#define union struct
+#endif
+  union {
+    Node *inc;
+    Node *case_next;
+  };
+  union {
+    Node *lhs;
+    Node *cond;
+  };
+  union {
+    Node *rhs;
+    Node *els;
+    Node *init;
+    Member *member; // Struct member access
+    int case_label;
+  };
+  union {
+    Node *args; // Function call
+    Node *default_case;
+    int case_end_label;
+  };
+  union {
+    Node *then;
+    Node *body; // Block or statement expression
+  };
+  union {
+    char *funcname; // Function call
+    char *label_name; // Goto or labeled statement
+    Var *var;
+    long val; // Integer literal
+  };
+#ifndef SHRINK_NODE
+#undef union
+#endif
 };
 
 // Global variable initializer. Global variables can be initialized
