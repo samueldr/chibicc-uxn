@@ -56,10 +56,14 @@ int main(int argc, char **argv) {
   total_alloc = 0;
 
   token = tokenize();
-  fprintf(stderr, "tokenize(): allocated %d bytes\n", total_alloc);
+  fprintf(stderr, "tokenize(): allocated %d bytes (sizeof(Token) = %d)\n",
+          total_alloc, (int)sizeof(Token));
   total_alloc = 0;
 
   Program *prog = program();
+  fprintf(stderr, "program(): allocated %d bytes (sizeof(Node) = %d)\n",
+          total_alloc, (int)sizeof(Node));
+  total_alloc = 0;
 
   // Assign offsets to local variables.
   for (Function *fn = prog->fns; fn; fn = fn->next) {
