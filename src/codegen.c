@@ -857,12 +857,12 @@ static void emit_text(Program *prog) {
     // -(-a / b)
     printf("    SWP2 #0000 SWP2 SUB2 SWP2 DIV2 #0000 SWP2 SUB2 JMP2r\n");
     printf("  &b_neg");
-    printf("    OVR2 POP #80 AND ?&a_neg_b_neg");
+    printf("    #0000 SWP2 SUB2 OVR2 POP #80 AND ?&a_neg_b_neg");
     // -(a / -b)
-    printf("    #0000 SWP2 SUB2 DIV2 #0000 SWP2 SUB2 JMP2r\n");
+    printf("    DIV2 #0000 SWP2 SUB2 JMP2r\n");
     printf("  &a_neg_b_neg");
     // (-a / -b)
-    printf("    #0000 ROT2 SUB2 SWP2 #0000 SWP2 SUB2 DIV2 JMP2r\n");
+    printf("    #0000 ROT2 SUB2 SWP2 DIV2 JMP2r\n");
   }
 }
 
