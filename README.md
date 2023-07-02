@@ -104,7 +104,7 @@ extern int sum_of_squares(int x, int y);
 ```tal
 ( sum_of_squares.tal )
 ( Note the underscore at the end of the function name. TODO?: don't mangle extern function calls. )
-@sum_of_squares_ ( x* y* -> result* )
+@sum_of_squares_ ( y* x* -> result* )
   DUP2 MUL2 SWP2 DUP2 MUL2 ADD2
   JMP2r
 ```
@@ -117,3 +117,19 @@ uxnasm tmp.tal tmp.rom
 ```
 
 See [examples/mandelbrot_fast.c](./examples/mandelbrot_fast.c).
+
+### Calling convention
+
+To write uxntal that's compatible with chibicc, you need to know how chibicc calls functions.
+
+Arguments are pushed to the stack in reverse order: a C function like `int foo(int x, int y, int z);` corresponds to an uxntal signature like `( z* y* x* -- result* )`.
+
+Arguments are always passed on the working stack as shorts (16-bit). The result is always a short, even if the C type is `void` or `char`. Your uxntal implementation of a void-returning function should leave a `#0000` on the stack before returning.
+
+Some examples:
+
+| C signature | uxntal signature |
+| --- | --- |
+| `int f(int a, int b);` | `( b* a* -- result* )` |
+| `char g(int a, char b);` | `( b* a* -- result* )` |
+| `void h(void);` | `( -- result* )` |
