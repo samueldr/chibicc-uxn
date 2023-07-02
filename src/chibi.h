@@ -8,7 +8,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
 
 extern int total_alloc;
 #define calloc(n, a) (total_alloc += (n) * (a), calloc(n, a))

@@ -238,14 +238,16 @@ static Token *read_int_literal(Token *cur, char *start) {
 
   // Read a binary, octal, decimal or hexadecimal number.
   int base;
-  if (!strncasecmp(p, "0x", 2) && is_alnum(p[2])) {
-    p += 2;
-    base = 16;
-  } else if (!strncasecmp(p, "0b", 2) && is_alnum(p[2])) {
-    p += 2;
-    base = 2;
-  } else if (*p == '0') {
-    base = 8;
+  if (*p == '0') {
+    if ((p[1] | 32) == 'x' && is_alnum(p[2])) {
+      p += 2;
+      base = 16;
+    } else if ((p[1] | 32) == 'b' && is_alnum(p[2])) {
+      p += 2;
+      base = 2;
+    } else {
+      base = 8;
+    }
   } else {
     base = 10;
   }
