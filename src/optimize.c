@@ -1,9 +1,9 @@
 #include "chibi.h"
 
 char *opcode_names[0x20] = {
-  "BRK", "INC", "POP", "NIP", "SWP", "ROT", "DUP", "OVR", "EQU", "NEQ", "GTH",
-  "LTH", "JMP", "JCN", "JSR", "STH", "LDZ", "STZ", "LDR", "STR", "LDA", "STA",
-  "DEI", "DEO", "ADD", "SUB", "MUL", "DIV", "AND", "ORA", "EOR", "SFT",
+    "BRK", "INC", "POP", "NIP", "SWP", "ROT", "DUP", "OVR", "EQU", "NEQ", "GTH",
+    "LTH", "JMP", "JCN", "JSR", "STH", "LDZ", "STZ", "LDR", "STR", "LDA", "STA",
+    "DEI", "DEO", "ADD", "SUB", "MUL", "DIV", "AND", "ORA", "EOR", "SFT",
 };
 
 Instruction *emit_head;
@@ -112,6 +112,31 @@ static bool optimize_pass(Instruction *prog, int stage) {
       continue;
     }
 
+    // #0002 ADD2 -> INC2 INC2
+    if (IsLit2(prog, 2) && prog->next && prog->next->opcode == ADD2) {
+      prog->opcode = INC2;
+      prog->next->opcode = INC2;
+      changed = true;
+      continue;
+    }
+
+    // Commutativity
+    if (prog->opcode == SWP2 && prog->next &&
+            (prog->next->opcode == ORA2 || prog->next->opcode == AND2 ||
+             prog->next->opcode == ADD2 || prog->next->opcode == MUL2 ||
+             prog->next->opcode == EOR2 || prog->next->opcode == EQU2 ||
+             prog->next->opcode == NEQ2) ||
+        prog->opcode == SWP && prog->next &&
+            (prog->next->opcode == ORA || prog->next->opcode == AND ||
+             prog->next->opcode == ADD || prog->next->opcode == MUL ||
+             prog->next->opcode == EOR || prog->next->opcode == EQU ||
+             prog->next->opcode == NEQ)) {
+      prog->opcode = prog->next->opcode;
+      prog->next = prog->next->next;
+      changed = true;
+      continue;
+    }
+
     // #0000 +-|^ -> nothing
     if (IsLit2(prog, 0) && prog->next &&
         (prog->next->opcode == ADD2 || prog->next->opcode == SUB2 ||
@@ -162,6 +187,14 @@ static bool optimize_pass(Instruction *prog, int stage) {
         log2++;
       prog->literal = log2 << (prog->next->opcode == MUL2 ? 4 : 0);
       prog->next->opcode = SFT2;
+      changed = true;
+      continue;
+    }
+
+    // #10 SFT2 -> DUP2 ADD2
+    if (IsLit2(prog, 10) && prog->next && prog->next->opcode == SFT2) {
+      prog->opcode = DUP2;
+      prog->next->opcode = ADD2;
       changed = true;
       continue;
     }
@@ -218,15 +251,15 @@ static bool optimize_pass(Instruction *prog, int stage) {
     // DUP2 (INC2|LDA2|DUP2) -> +k
     if (prog->opcode == DUP2 && prog->next &&
         (prog->next->opcode == INC2 || prog->next->opcode == LDA2 ||
-         prog->next->opcode == DUP2)) {
+         prog->next->opcode == LDA || prog->next->opcode == DUP2)) {
       prog->opcode = (prog->next->opcode | flag_k);
       prog->next = prog->next->next;
       changed = true;
       continue;
     }
 
-    // A common sequence: STH2kr #xxxx ADD2 #yyyy SWP2 -> #yyyy STH2kr #xxxx
-    // ADD2
+    // A common sequence:
+    // STH2kr #xxxx ADD2 #yyyy SWP2 -> #yyyy STH2kr #xxxx ADD2
     if (prog->opcode == STH2kr && prog->next && prog->next->opcode == LIT2 &&
         prog->next->next && prog->next->next->opcode == ADD2 &&
         prog->next->next->next && prog->next->next->next->opcode == LIT2 &&
@@ -294,6 +327,15 @@ static bool optimize_pass(Instruction *prog, int stage) {
       continue;
     }
 
+    // #ffff NEQ2 ? -> INC2 ORA ?
+    if (IsLit2(prog, 0xffff) && prog->next && prog->next->opcode == NEQ2 &&
+        prog->next->next && prog->next->next->opcode == JCI) {
+      prog->opcode = INC2;
+      prog->next->opcode = ORA;
+      changed = true;
+      continue;
+    }
+
     // sext #00xx AND2 -> #xx AND #00 SWP
     if (prog->opcode == JSI && !strcmp("sext", prog->label) && prog->next &&
         prog->next->opcode == LIT2 && !(prog->next->literal & 0xff00) &&
@@ -321,6 +363,14 @@ static bool optimize_pass(Instruction *prog, int stage) {
       prog->next->next->opcode = LIT;
       prog->next->next->literal = 0;
       prog->next->next->next->opcode = SWP;
+      changed = true;
+      continue;
+    }
+
+    // STH2kr LDA -> LDAkr STHr is slightly faster
+    if (prog->opcode == STH2kr && prog->next && prog->next->opcode == LDA) {
+      prog->opcode = LDA | flag_k | flag_r;
+      prog->next->opcode = STH | flag_r;
       changed = true;
       continue;
     }
