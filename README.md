@@ -124,7 +124,7 @@ To write uxntal that's compatible with chibicc, you need to know how chibicc cal
 
 Arguments are pushed to the stack in reverse order: a C function like `int foo(int x, int y, int z);` corresponds to an uxntal signature like `( z* y* x* -- result* )`.
 
-Arguments are always passed on the working stack as shorts (16-bit). The result is always a short, even if the C type is `void` or `char`. Your uxntal implementation of a void-returning function should leave a `#0000` on the stack before returning.
+Arguments are always passed on the working stack as shorts (16-bit). The result is always a short, even if the C type is `void` or `char`. Your uxntal implementation of a void-returning function should leave a 16-bit dummy value on the stack before returning.
 
 Some examples:
 
