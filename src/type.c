@@ -4,8 +4,8 @@ Type *void_type  = &(Type){ TY_VOID, 1, 1, 0 };
 Type *bool_type  = &(Type){ TY_BOOL, 1, 1, 0 };
 Type *char_type  = &(Type){ TY_CHAR, 1, 1, 0 };
 Type *uchar_type  = &(Type){ TY_CHAR, 1, 1, 1 };
-// Type *short_type = &(Type){ TY_INT, 2, 2, 0 };
-// Type *ushort_type = &(Type){ TY_INT, 2, 2, 1 };
+// Type *short_type = &(Type){ TY_SHORT, 2, 2, 0 };
+// Type *ushort_type = &(Type){ TY_SHORT, 2, 2, 1 };
 Type *int_type   = &(Type){ TY_INT, 2, 2, 0 };
 Type *uint_type  = &(Type){ TY_INT, 2, 2, 1 };
 //Type *long_type  = &(Type){ TY_LONG, 4, 4, 0 };
@@ -13,7 +13,7 @@ Type *uint_type  = &(Type){ TY_INT, 2, 2, 1 };
 
 bool is_integer(Type *ty) {
   TypeKind k = ty->kind;
-  return k == TY_BOOL || k == TY_CHAR || k == TY_INT ||
+  return k == TY_BOOL || k == TY_CHAR || // k == TY_SHORT ||
          k == TY_INT; //  ||k == TY_LONG;
 }
 
