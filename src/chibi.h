@@ -299,7 +299,14 @@ void add_type(Node *node);
 // codegen.c
 //
 
-void codegen(Program *prog, bool do_opt);
+typedef struct {
+  char *name;
+  unsigned char port;
+} Device;
+
+void varvara_argc_argv_hook(void);
+
+void codegen(Program *prog, bool do_opt, int devices_size, Device* devices, Device* console, void (*argc_argv_hook)(void));
 
 //
 // optimize.c

@@ -875,17 +875,7 @@ static void emit_text(Program *prog) {
   }
 }
 
-typedef struct {
-  char *name;
-  unsigned char port;
-} Device;
-
-static Device devices[] = {
-    {"console", 0x10}, {"screen", 0x20}, {"audio1", 0x30},     {"audio2", 0x40},
-    {"audio3", 0x50},  {"audio4", 0x60}, {"controller", 0x80}, {"mouse", 0x90},
-};
-
-void do_argc_argv_hook(void) {
+void varvara_argc_argv_hook(void) {
   // This is routines/argc_argv.tal but without comments or indentation.
   // To update this function after editing that file, use update_argc_argv.sh
   printf("  LIT2r fffe #0001 STH2kr STA2 LIT2r 0001 SUB2r #17 DEI ?&set_arg_hook !prep_argc_argv_and_call_main\n");
@@ -900,14 +890,15 @@ void do_argc_argv_hook(void) {
   printf("  &strlen_loop INC2k SWP2 LDA ?&strlen_loop DUP2 #fffe LTH2 ?&argv_loop POP2 POP2 STH2kr #fffe LDA2 main_ BRK\n");
 }
 
-void codegen(Program *prog, bool do_opt) {
+void codegen(Program *prog, bool do_opt, int devices_size, Device* devices, Device* console, void (*argc_argv_hook)(void)) {
   int i;
-  bool need_device_hook[sizeof(devices) / sizeof(Device)] = {false};
+  bool need_device_hook[devices_size];
+  for(i = 0; i < devices_size; ++i){ need_device_hook[i] = false; }
   bool need_argc_argv = false;
 
   printf("|0100\n");
   for (Function *fn = prog->fns; fn; fn = fn->next) {
-    for (i = 0; i < sizeof(devices) / sizeof(Device); i++) {
+    for (i = 0; i < devices_size; i++) {
       if (*devices[i].name && !strncmp(fn->name, "on_", 3) &&
           !strcmp(fn->name + 3, devices[i].name)) {
         printf("  ;L.%s.hook #%02x DEO2\n", devices[i].name, devices[i].port);
@@ -918,11 +909,10 @@ void codegen(Program *prog, bool do_opt) {
       if (!fn->params->next || (fn->params->next && fn->params->next->next)) {
         error("main() has incorrect parameter count: 0 or 2 expected");
       }
-      if (fn->params->var->ty->kind != TY_INT ||
-          fn->params->next->var->ty->kind != TY_PTR || // argv[][] == **argv
-          !fn->params->next->var->ty->base ||
-          fn->params->next->var->ty->base->kind != TY_PTR ||
-          fn->params->next->var->ty->base->base->kind != TY_CHAR) {
+      Type* ty1 = fn->params->var->ty;
+      Type* ty2 = fn->params->next->var->ty;
+      if (ty1->kind != TY_INT || ty2->kind != TY_PTR || !ty2->base ||
+          ty2->base->kind != TY_PTR || ty2->base->base->kind != TY_CHAR) {
         error("main() parameters have incorrect types: main(int argc, char *argv[]) expected");
       }
       need_argc_argv = true;
@@ -930,17 +920,26 @@ void codegen(Program *prog, bool do_opt) {
   }
   if (!need_argc_argv) {
     printf("  LIT2r 0000 main_ POP2r BRK\n");
-    if (need_device_hook[0]) {
-      // TODO: passthrough for on_console() for stdin
-      error("Can't use on_console() and main(int argc, char **argv) at the same time");
-    }
   } else {
-    do_argc_argv_hook();
+    if (!console) {
+      error("main(int, char*[]), but no console device");
+    }
+    if (console < devices || console >= devices + devices_size) {
+      error("main(int, char*[]), but invalid console device pointer");
+    }
+    if (need_device_hook[console - devices]) {
+      // TODO: passthrough for on_console() for stdin
+      error("main(int, char*[]) clashes with console device hook");
+    }
+    if (!argc_argv_hook) {
+      error("main(int, char*[]), but hook is missing");
+    }
+    argc_argv_hook();
   }
-  for (i = 0; i < sizeof(devices) / sizeof(Device); i++) {
+  for (i = 0; i < devices_size; i++) {
     if (need_device_hook[i]) {
-      printf("  @L.%s.hook LIT2r 0000 on_%s_ POP2 POP2r BRK\n", devices[i].name,
-             devices[i].name);
+      printf("  @L.%s.hook LIT2r 0000 on_%s_ POP2 POP2r BRK\n",
+        devices[i].name, devices[i].name);
     }
   }
   emit_data(prog);
