@@ -38,6 +38,17 @@ int main(int argc, char **argv) {
       do_opt = true;
     } else if (!strcmp("-O0", argv[i])) {
       do_opt = false;
+    } else if (!strcmp("-h", argv[i])) {
+      printf("Usage: %s [options] <file>\n", argv[0]);
+      printf(
+        "\n"
+        "  -h             Print this help\n"
+        "  -O             Same as -O1\n"
+        "  -O1            Apply simple optimizations\n"
+        "  -O0            Apply no optimizations (default)\n"
+        "\n"
+      );
+      exit(0);
     } else if (argv[i][0] == '-') {
       error("%s: unrecognized option \"%s\"", argv[0], argv[i]);
     } else if (!filename) {
